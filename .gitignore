@@ -27,3 +27,26 @@ coverage/
 # misc
 *.tsbuildinfo
 .eslintcache
+
+# secrets & tokens (HARDCODED - jangan pernah commit)
+*.key
+*.pem
+*.cert
+*.p12
+credentials.json
+secrets.json
+token.txt
+ghp_*
+sk-ant-*
+
+# docker
+docker-compose.override.yml
+
+# playwright/browser
+.playwright-mcp/
+*.png
+!public/**/*.png
+
+# temp
+tmp/
+temp/
