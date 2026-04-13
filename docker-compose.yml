@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  claude-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: claude-api
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4143}:4143"
+    environment:
+      - PORT=4143
+      - HOST=0.0.0.0
+      - NODE_ENV=production
+      - API_SECRET_KEY=${API_SECRET_KEY:-}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-change-me-to-32-chars-minimum!!}
+      - POOL_STRATEGY=${POOL_STRATEGY:-round-robin}
+      - POOL_STATE_FILE=/app/data/pool.json
+      - POOL_HEALTH_CHECK_INTERVAL=${POOL_HEALTH_CHECK_INTERVAL:-60000}
+      - RATE_LIMIT_COOLDOWN=${RATE_LIMIT_COOLDOWN:-60000}
+      - RATE_LIMIT_MAX_CONSECUTIVE=${RATE_LIMIT_MAX_CONSECUTIVE:-5}
+      - MAX_RETRIES=${MAX_RETRIES:-3}
+      - RETRY_DELAY_BASE=${RETRY_DELAY_BASE:-1000}
+      - RETRY_DELAY_MAX=${RETRY_DELAY_MAX:-30000}
+      - CLAUDE_BASE_URL=${CLAUDE_BASE_URL:-https://api.anthropic.com}
+      - CLAUDE_API_TIMEOUT=${CLAUDE_API_TIMEOUT:-300000}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - DASHBOARD_ENABLED=${DASHBOARD_ENABLED:-true}
+      - DASHBOARD_USERNAME=${DASHBOARD_USERNAME:-admin}
+      - DASHBOARD_PASSWORD=${DASHBOARD_PASSWORD:-}
+    volumes:
+      - claude-api-data:/app/data
+      - claude-api-logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4143/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  claude-api-data:
+    driver: local
+  claude-api-logs:
+    driver: local
