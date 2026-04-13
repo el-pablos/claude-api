@@ -17,7 +17,7 @@ describe("config", () => {
     delete process.env.PORT;
     delete process.env.POOL_STRATEGY;
     const config = loadConfig();
-    expect(config.port).toBe(4141);
+    expect(config.port).toBe(4143);
     expect(config.poolStrategy).toBe("round-robin");
     expect(config.maxRetries).toBe(3);
     expect(config.claudeBaseUrl).toBe("https://api.anthropic.com");
