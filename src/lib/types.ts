@@ -78,6 +78,33 @@ export interface RequestLogEntry {
   error?: string;
 }
 
+export interface HistoryEntry {
+  id: string;
+  timestamp: number;
+  model: string;
+  method: string;
+  path: string;
+  statusCode: number;
+  responseTime: number;
+  accountId: string;
+  accountName: string;
+  inputTokens: number;
+  outputTokens: number;
+  error?: string;
+  cached: boolean;
+}
+
+export type NotificationType = "error" | "warning" | "info" | "success";
+
+export interface Notification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+}
+
 export interface AppConfig {
   port: number;
   host: string;

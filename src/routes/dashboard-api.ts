@@ -93,6 +93,14 @@ export function createDashboardApiRoutes(
         maxRetries: config.maxRetries,
         rateLimitCooldown: config.rateLimitCooldown,
         healthCheckInterval: config.poolHealthCheckInterval,
+        rateLimitMaxConsecutive: config.rateLimitMaxConsecutive,
+        retryDelayBase: config.retryDelayBase,
+        retryDelayMax: config.retryDelayMax,
+        claudeBaseUrl: config.claudeBaseUrl,
+        claudeApiTimeout: config.claudeApiTimeout,
+        logLevel: config.logLevel,
+        dashboardEnabled: config.dashboardEnabled,
+        nodeEnv: config.nodeEnv,
       },
     });
   });
@@ -102,7 +110,33 @@ export function createDashboardApiRoutes(
     if (body.strategy) {
       manager.setStrategy(body.strategy);
     }
+    if (typeof body.maxRetries === "number") {
+      config.maxRetries = body.maxRetries;
+    }
+    if (typeof body.rateLimitCooldown === "number") {
+      config.rateLimitCooldown = body.rateLimitCooldown;
+    }
+    if (typeof body.logLevel === "string") {
+      const validLevels = ["debug", "info", "warn", "error"];
+      if (validLevels.includes(body.logLevel)) {
+        config.logLevel = body.logLevel;
+        const { setLogLevel } = await import("~/lib/logger");
+        setLogLevel(body.logLevel as "debug" | "info" | "warn" | "error");
+      }
+    }
     return c.json({ status: "ok", message: "Config updated" });
+  });
+
+  app.get("/api/dashboard/status", (c) => {
+    const metrics = manager.getPoolMetrics();
+    return c.json({
+      status: "ok",
+      version: "1.0.0",
+      uptime: process.uptime(),
+      strategy: manager.getStrategy(),
+      totalAccounts: metrics.total,
+      activeAccounts: metrics.active,
+    });
   });
 
   return app;

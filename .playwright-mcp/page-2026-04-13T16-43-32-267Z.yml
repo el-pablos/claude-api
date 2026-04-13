@@ -1,0 +1,79 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - heading "Claude API Pool" [level=1] [ref=e5]
+        - generic [ref=e6]: healthy
+      - generic [ref=e7]: "Last update: 11:43:32 PM"
+  - main [ref=e8]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - generic [ref=e11]: Total
+        - generic [ref=e12]: "1"
+      - generic [ref=e13]:
+        - generic [ref=e14]: Active
+        - generic [ref=e15]: "1"
+      - generic [ref=e16]:
+        - generic [ref=e17]: Rate Limited
+        - generic [ref=e18]: "0"
+      - generic [ref=e19]:
+        - generic [ref=e20]: Invalid
+        - generic [ref=e21]: "0"
+      - generic [ref=e22]:
+        - generic [ref=e23]: Disabled
+        - generic [ref=e24]: "0"
+      - generic [ref=e25]:
+        - generic [ref=e26]: Req/Min
+        - generic [ref=e27]: "0"
+    - generic [ref=e28]:
+      - generic [ref=e29]:
+        - generic [ref=e30]: Total Requests
+        - generic [ref=e31]: "0"
+      - generic [ref=e32]:
+        - generic [ref=e33]: Req/Min
+        - generic [ref=e34]: "0"
+      - generic [ref=e35]:
+        - generic [ref=e36]: Success Rate
+        - generic [ref=e37]: 0%
+      - generic [ref=e38]:
+        - generic [ref=e39]: Avg Response
+        - generic [ref=e40]: 0ms
+    - generic [ref=e41]:
+      - generic [ref=e42]:
+        - heading "Accounts" [level=2] [ref=e43]
+        - button "Add Account" [ref=e44] [cursor=pointer]
+      - table [ref=e46]:
+        - rowgroup [ref=e47]:
+          - row "Name API Key Status Requests Success Last Used Actions" [ref=e48]:
+            - columnheader "Name" [ref=e49]
+            - columnheader "API Key" [ref=e50]
+            - columnheader "Status" [ref=e51]
+            - columnheader "Requests" [ref=e52]
+            - columnheader "Success" [ref=e53]
+            - columnheader "Last Used" [ref=e54]
+            - columnheader "Actions" [ref=e55]
+        - rowgroup [ref=e56]:
+          - row "demo-key-1 sk-ant-...2345 active 0 - Never Disable Delete" [ref=e57]:
+            - cell "demo-key-1" [ref=e58]
+            - cell "sk-ant-...2345" [ref=e59]
+            - cell "active" [ref=e60]
+            - cell "0" [ref=e61]
+            - cell "-" [ref=e62]
+            - cell "Never" [ref=e63]
+            - cell "Disable Delete" [ref=e64]:
+              - button "Disable" [ref=e65] [cursor=pointer]
+              - button "Delete" [ref=e66] [cursor=pointer]
+    - generic [ref=e67]:
+      - heading "Recent Requests" [level=2] [ref=e69]
+      - generic [ref=e70]:
+        - table [ref=e71]:
+          - rowgroup [ref=e72]:
+            - row "Time Account Endpoint Status Time Attempts" [ref=e73]:
+              - columnheader "Time" [ref=e74]
+              - columnheader "Account" [ref=e75]
+              - columnheader "Endpoint" [ref=e76]
+              - columnheader "Status" [ref=e77]
+              - columnheader "Time" [ref=e78]
+              - columnheader "Attempts" [ref=e79]
+          - rowgroup
+        - generic [ref=e80]: No requests yet

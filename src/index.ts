@@ -12,7 +12,12 @@ import { createApiRoutes } from "./routes/api";
 import { createHealthRoutes } from "./routes/health";
 import { createDashboardApiRoutes } from "./routes/dashboard-api";
 import { createDashboardRoutes } from "./routes/dashboard";
+import { createLogStreamRoutes } from "./routes/log-stream";
+import { createHistoryApiRoutes } from "./routes/history-api";
+import { createNotificationsApiRoutes } from "./routes/notifications-api";
+import { addNotification } from "./lib/notification-center";
 import type { LogLevel } from "./lib/logger";
+import type { ApiKeyAccount } from "./lib/types";
 
 async function main() {
   const config = loadConfig();
@@ -26,6 +31,30 @@ async function main() {
 
   const manager = new AccountManager(config);
   await manager.initialize();
+
+  manager.on("account:rate-limited", (account: ApiKeyAccount) => {
+    addNotification(
+      "warning",
+      "Account Rate Limited",
+      `Account "${account.name}" (${account.id.slice(0, 8)}...) has been rate limited. Reset at: ${account.rateLimit.resetAt ? new Date(account.rateLimit.resetAt).toISOString() : "unknown"}.`,
+    );
+  });
+
+  manager.on("account:invalid", (account: ApiKeyAccount) => {
+    addNotification(
+      "error",
+      "Account Invalid",
+      `Account "${account.name}" (${account.id.slice(0, 8)}...) has been marked as invalid due to consecutive failures.`,
+    );
+  });
+
+  manager.on("account:recovered", (account: ApiKeyAccount) => {
+    addNotification(
+      "success",
+      "Account Recovered",
+      `Account "${account.name}" (${account.id.slice(0, 8)}...) has recovered and is now active.`,
+    );
+  });
 
   const proxy = new ProxyHandler(manager, config);
 
@@ -45,8 +74,15 @@ async function main() {
 
   const apiAuth = createAuthMiddleware(config);
   const dashboardApiRoutes = createDashboardApiRoutes(manager, config);
+  const logStreamRoutes = createLogStreamRoutes();
+  const historyApiRoutes = createHistoryApiRoutes();
+  const notificationsApiRoutes = createNotificationsApiRoutes();
+
   app.use("/api/*", apiAuth);
   app.route("/", dashboardApiRoutes);
+  app.route("/", logStreamRoutes);
+  app.route("/", historyApiRoutes);
+  app.route("/", notificationsApiRoutes);
 
   const apiRoutes = createApiRoutes(proxy);
   app.route("/", apiRoutes);
