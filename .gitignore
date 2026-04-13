@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# data & state
+data/*.json
+logs/
+
+# build
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# test
+coverage/
+
+# misc
+*.tsbuildinfo
+.eslintcache
