@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Claude API Pool — Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+    ></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+    <style>
+      [x-cloak] {
+        display: none !important;
+      }
+      body {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+      .status-active {
+        background: #10b981;
+      }
+      .status-rate_limited {
+        background: #f59e0b;
+      }
+      .status-invalid {
+        background: #ef4444;
+      }
+      .status-disabled {
+        background: #6b7280;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-950 text-gray-100 min-h-screen"
+    x-data="dashboard()"
+    x-init="init()"
+  >
+    <!-- Header -->
+    <header class="bg-gray-900 border-b border-gray-800 px-6 py-4">
+      <div class="max-w-7xl mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <h1 class="text-xl font-bold text-white">Claude API Pool</h1>
+          <span
+            class="px-2 py-0.5 rounded text-xs font-medium"
+            :class="poolStatus === 'healthy' ? 'bg-emerald-900 text-emerald-300' : poolStatus === 'degraded' ? 'bg-amber-900 text-amber-300' : 'bg-red-900 text-red-300'"
+            x-text="poolStatus"
+          ></span>
+        </div>
+        <div
+          class="text-sm text-gray-400"
+          x-text="'Last update: ' + lastUpdate"
+        ></div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-6 space-y-6">
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <template x-for="card in statCards" :key="card.label">
+          <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+            <div class="text-sm text-gray-400" x-text="card.label"></div>
+            <div
+              class="text-2xl font-bold mt-1"
+              :class="card.color"
+              x-text="card.value"
+            ></div>
+          </div>
+        </template>
+      </div>
+
+      <!-- Request Stats -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+          <div class="text-sm text-gray-400">Total Requests</div>
+          <div
+            class="text-2xl font-bold text-white"
+            x-text="stats.requests?.total || 0"
+          ></div>
+        </div>
+        <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+          <div class="text-sm text-gray-400">Req/Min</div>
+          <div
+            class="text-2xl font-bold text-blue-400"
+            x-text="stats.requests?.perMinute || 0"
+          ></div>
+        </div>
+        <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+          <div class="text-sm text-gray-400">Success Rate</div>
+          <div
+            class="text-2xl font-bold text-emerald-400"
+            x-text="successRate + '%'"
+          ></div>
+        </div>
+        <div class="bg-gray-900 rounded-lg p-4 border border-gray-800">
+          <div class="text-sm text-gray-400">Avg Response</div>
+          <div
+            class="text-2xl font-bold text-purple-400"
+            x-text="(stats.requests?.avgResponseTime || 0) + 'ms'"
+          ></div>
+        </div>
+      </div>
+
+      <!-- Account Table -->
+      <div class="bg-gray-900 rounded-lg border border-gray-800">
+        <div
+          class="p-4 border-b border-gray-800 flex items-center justify-between"
+        >
+          <h2 class="text-lg font-semibold">Accounts</h2>
+          <button
+            @click="showAddModal = true"
+            class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium"
+          >
+            Add Account
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-gray-400 border-b border-gray-800">
+              <tr>
+                <th class="text-left p-3">Name</th>
+                <th class="text-left p-3">API Key</th>
+                <th class="text-left p-3">Status</th>
+                <th class="text-right p-3">Requests</th>
+                <th class="text-right p-3">Success</th>
+                <th class="text-left p-3">Last Used</th>
+                <th class="text-right p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="account in accounts" :key="account.id">
+                <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                  <td class="p-3 font-medium" x-text="account.name"></td>
+                  <td
+                    class="p-3 text-gray-400 font-mono text-xs"
+                    x-text="account.apiKey"
+                  ></td>
+                  <td class="p-3">
+                    <span
+                      class="px-2 py-0.5 rounded text-xs font-medium"
+                      :class="{
+                      'bg-emerald-900 text-emerald-300': account.status === 'active',
+                      'bg-amber-900 text-amber-300': account.status === 'rate_limited',
+                      'bg-red-900 text-red-300': account.status === 'invalid',
+                      'bg-gray-700 text-gray-300': account.status === 'disabled'
+                    }"
+                      x-text="account.status"
+                    ></span>
+                  </td>
+                  <td class="p-3 text-right" x-text="account.usage.total"></td>
+                  <td
+                    class="p-3 text-right"
+                    x-text="account.usage.total > 0 ? Math.round(account.usage.success / account.usage.total * 100) + '%' : '-'"
+                  ></td>
+                  <td
+                    class="p-3 text-gray-400 text-xs"
+                    x-text="account.metadata.lastUsedAt ? new Date(account.metadata.lastUsedAt).toLocaleTimeString() : 'Never'"
+                  ></td>
+                  <td class="p-3 text-right space-x-1">
+                    <button
+                      x-show="account.status !== 'disabled'"
+                      @click="disableAccount(account.id)"
+                      class="px-2 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded"
+                    >
+                      Disable
+                    </button>
+                    <button
+                      x-show="account.status === 'disabled'"
+                      @click="enableAccount(account.id)"
+                      class="px-2 py-1 text-xs bg-emerald-700 hover:bg-emerald-600 rounded"
+                    >
+                      Enable
+                    </button>
+                    <button
+                      x-show="account.status === 'rate_limited'"
+                      @click="resetRateLimit(account.id)"
+                      class="px-2 py-1 text-xs bg-amber-700 hover:bg-amber-600 rounded"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      @click="deleteAccount(account.id)"
+                      class="px-2 py-1 text-xs bg-red-700 hover:bg-red-600 rounded"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <div
+            x-show="accounts.length === 0"
+            class="p-8 text-center text-gray-500"
+          >
+            No accounts added yet
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Logs -->
+      <div class="bg-gray-900 rounded-lg border border-gray-800">
+        <div class="p-4 border-b border-gray-800">
+          <h2 class="text-lg font-semibold">Recent Requests</h2>
+        </div>
+        <div class="overflow-x-auto max-h-80 overflow-y-auto">
+          <table class="w-full text-xs font-mono">
+            <thead
+              class="text-gray-400 border-b border-gray-800 sticky top-0 bg-gray-900"
+            >
+              <tr>
+                <th class="text-left p-2">Time</th>
+                <th class="text-left p-2">Account</th>
+                <th class="text-left p-2">Endpoint</th>
+                <th class="text-right p-2">Status</th>
+                <th class="text-right p-2">Time</th>
+                <th class="text-right p-2">Attempts</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template x-for="log in logs" :key="log.id">
+                <tr class="border-b border-gray-800/30">
+                  <td
+                    class="p-2 text-gray-400"
+                    x-text="new Date(log.timestamp).toLocaleTimeString()"
+                  ></td>
+                  <td
+                    class="p-2"
+                    x-text="log.accountName || log.accountId.slice(0,8)"
+                  ></td>
+                  <td class="p-2" x-text="log.method + ' ' + log.path"></td>
+                  <td
+                    class="p-2 text-right"
+                    :class="log.statusCode < 300 ? 'text-emerald-400' : log.statusCode < 500 ? 'text-amber-400' : 'text-red-400'"
+                    x-text="log.statusCode"
+                  ></td>
+                  <td
+                    class="p-2 text-right text-gray-400"
+                    x-text="log.responseTime + 'ms'"
+                  ></td>
+                  <td class="p-2 text-right" x-text="log.attempts"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+          <div x-show="logs.length === 0" class="p-8 text-center text-gray-500">
+            No requests yet
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Add Account Modal -->
+    <div
+      x-show="showAddModal"
+      x-cloak
+      class="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
+      @click.self="showAddModal = false"
+    >
+      <div
+        class="bg-gray-900 rounded-lg border border-gray-700 p-6 w-full max-w-md"
+      >
+        <h3 class="text-lg font-semibold mb-4">Add Account</h3>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Name</label>
+            <input
+              x-model="newAccount.name"
+              type="text"
+              class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm"
+              placeholder="e.g. work-key-1"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">API Key</label>
+            <input
+              x-model="newAccount.apiKey"
+              type="password"
+              class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm font-mono"
+              placeholder="sk-ant-..."
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm text-gray-400 mb-1"
+                >Priority (1-100)</label
+              >
+              <input
+                x-model.number="newAccount.priority"
+                type="number"
+                min="1"
+                max="100"
+                class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm"
+              />
+            </div>
+            <div>
+              <label class="block text-sm text-gray-400 mb-1">Weight</label>
+              <input
+                x-model.number="newAccount.weight"
+                type="number"
+                min="1"
+                max="10"
+                class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-sm"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-5">
+          <button
+            @click="showAddModal = false"
+            class="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 rounded"
+          >
+            Cancel
+          </button>
+          <button
+            @click="addAccount()"
+            :disabled="addLoading"
+            class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 rounded font-medium disabled:opacity-50"
+          >
+            <span x-show="!addLoading">Add</span>
+            <span x-show="addLoading">Adding...</span>
+          </button>
+        </div>
+        <div
+          x-show="addError"
+          class="mt-3 text-sm text-red-400"
+          x-text="addError"
+        ></div>
+      </div>
+    </div>
+
+    <script>
+      function dashboard() {
+        return {
+          stats: {},
+          accounts: [],
+          logs: [],
+          poolStatus: "loading",
+          lastUpdate: "-",
+          showAddModal: false,
+          addLoading: false,
+          addError: "",
+          newAccount: { name: "", apiKey: "", priority: 50, weight: 1 },
+          pollTimer: null,
+
+          get statCards() {
+            return [
+              {
+                label: "Total",
+                value: this.stats.total || 0,
+                color: "text-white",
+              },
+              {
+                label: "Active",
+                value: this.stats.active || 0,
+                color: "text-emerald-400",
+              },
+              {
+                label: "Rate Limited",
+                value: this.stats.rateLimited || 0,
+                color: "text-amber-400",
+              },
+              {
+                label: "Invalid",
+                value: this.stats.invalid || 0,
+                color: "text-red-400",
+              },
+              {
+                label: "Disabled",
+                value: this.stats.disabled || 0,
+                color: "text-gray-400",
+              },
+              {
+                label: "Req/Min",
+                value: this.stats.requests?.perMinute || 0,
+                color: "text-blue-400",
+              },
+            ];
+          },
+
+          get successRate() {
+            const r = this.stats.requests;
+            if (!r || r.total === 0) return 0;
+            return Math.round((r.success / r.total) * 100);
+          },
+
+          async init() {
+            await this.refresh();
+            this.pollTimer = setInterval(() => this.refresh(), 5000);
+          },
+
+          async refresh() {
+            try {
+              const [statsRes, accountsRes, logsRes] = await Promise.all([
+                fetch("/api/dashboard/stats"),
+                fetch("/api/dashboard/accounts"),
+                fetch("/api/dashboard/logs?limit=50"),
+              ]);
+              const statsData = await statsRes.json();
+              const accountsData = await accountsRes.json();
+              const logsData = await logsRes.json();
+
+              this.stats = statsData;
+              this.accounts = accountsData.accounts || [];
+              this.logs = logsData.logs || [];
+              this.poolStatus =
+                (this.stats.active || 0) > 0
+                  ? "healthy"
+                  : (this.stats.rateLimited || 0) > 0
+                    ? "degraded"
+                    : this.stats.total > 0
+                      ? "down"
+                      : "empty";
+              this.lastUpdate = new Date().toLocaleTimeString();
+            } catch (e) {
+              this.poolStatus = "error";
+            }
+          },
+
+          async addAccount() {
+            this.addError = "";
+            if (!this.newAccount.name || !this.newAccount.apiKey) {
+              this.addError = "Name and API key are required";
+              return;
+            }
+            this.addLoading = true;
+            try {
+              const res = await fetch("/api/dashboard/accounts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(this.newAccount),
+              });
+              const data = await res.json();
+              if (!res.ok)
+                throw new Error(data.error || "Failed to add account");
+              this.showAddModal = false;
+              this.newAccount = {
+                name: "",
+                apiKey: "",
+                priority: 50,
+                weight: 1,
+              };
+              await this.refresh();
+            } catch (e) {
+              this.addError = e.message;
+            } finally {
+              this.addLoading = false;
+            }
+          },
+
+          async disableAccount(id) {
+            await fetch(`/api/dashboard/accounts/${id}/disable`, {
+              method: "POST",
+            });
+            await this.refresh();
+          },
+
+          async enableAccount(id) {
+            await fetch(`/api/dashboard/accounts/${id}/enable`, {
+              method: "POST",
+            });
+            await this.refresh();
+          },
+
+          async resetRateLimit(id) {
+            await fetch(`/api/dashboard/accounts/${id}/reset-rate-limit`, {
+              method: "POST",
+            });
+            await this.refresh();
+          },
+
+          async deleteAccount(id) {
+            if (!confirm("Delete this account?")) return;
+            await fetch(`/api/dashboard/accounts/${id}`, { method: "DELETE" });
+            await this.refresh();
+          },
+        };
+      }
+    </script>
+  </body>
+</html>
