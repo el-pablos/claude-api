@@ -17,7 +17,7 @@ export function loadConfig(): AppConfig {
   }
 
   return {
-    port: parseInt(process.env.PORT || "4141", 10),
+    port: parseInt(process.env.PORT || "4143", 10),
     host: process.env.HOST || "0.0.0.0",
     nodeEnv: process.env.NODE_ENV || "development",
     apiSecretKey: process.env.API_SECRET_KEY || "",

@@ -29,7 +29,7 @@ maka ini solusinya.
 │          (Claude Code / Anthropic SDK)           │
 └────────────────────┬────────────────────────────┘
                      │
-                     │  ANTHROPIC_BASE_URL=http://localhost:4141
+                     │  ANTHROPIC_BASE_URL=http://localhost:4143
                      ▼
 ┌─────────────────────────────────────────────────┐
 │              claude-api proxy                    │
@@ -172,7 +172,7 @@ npm start
 
 ### 1. tambah API key via dashboard
 
-buka `http://localhost:4141/dashboard`, klik "Add Account", masukin:
+buka `http://localhost:4143/dashboard`, klik "Add Account", masukin:
 
 - **Name**: label buat key (misal `work-key-1`)
 - **API Key**: `sk-ant-api03-xxxxx`
@@ -182,7 +182,7 @@ buka `http://localhost:4141/dashboard`, klik "Add Account", masukin:
 ### 2. atau via API
 
 ```bash
-curl -X POST http://localhost:4141/api/dashboard/accounts \
+curl -X POST http://localhost:4143/api/dashboard/accounts \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer your-secret-key" \
   -d '{
@@ -197,7 +197,7 @@ curl -X POST http://localhost:4141/api/dashboard/accounts \
 
 ```bash
 # set environment variable
-export ANTHROPIC_BASE_URL=http://localhost:4141
+export ANTHROPIC_BASE_URL=http://localhost:4143
 export ANTHROPIC_API_KEY=dummy-key
 
 # jalankan Claude Code seperti biasa
@@ -208,7 +208,7 @@ atau di config Claude Code:
 
 ```json
 {
-  "apiBaseUrl": "http://localhost:4141"
+  "apiBaseUrl": "http://localhost:4143"
 }
 ```
 
@@ -220,7 +220,7 @@ semua konfigurasi via environment variable:
 
 | Variable              | Default                     | Deskripsi                                                                    |
 | --------------------- | --------------------------- | ---------------------------------------------------------------------------- |
-| `PORT`                | `4141`                      | Port server                                                                  |
+| `PORT`                | `4143`                      | Port server                                                                  |
 | `HOST`                | `0.0.0.0`                   | Host binding                                                                 |
 | `API_SECRET_KEY`      | -                           | Secret key untuk dashboard API                                               |
 | `ENCRYPTION_KEY`      | -                           | Key enkripsi credential (min 32 chars)                                       |
