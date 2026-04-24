@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -25,28 +25,40 @@
         theme: {
           extend: {
             colors: {
-              dc: {
-                bg: "#1e1f22",
-                surface: "#2b2d31",
-                hover: "#35373c",
-                active: "#404249",
-                border: "#3f4147",
-                text: "#dbdee1",
-                muted: "#949ba4",
-                heading: "#f2f3f5",
-                brand: "#5865f2",
-                green: "#23a559",
-                yellow: "#f0b232",
-                red: "#da373c",
-                cyan: "#00b4d8",
-                purple: "#9b59b6",
-                sidebar: "#2b2d31",
-                panel: "#232428",
+              forest: {
+                950: "#091413",
+                900: "#0d1f1c",
+                800: "#132b26",
+                700: "#1a3d35",
+                600: "#285A48",
+                500: "#408A71",
+                400: "#57a68a",
+                300: "#7ec4a8",
+                200: "#B0E4CC",
+                100: "#d4f3e6",
+                50: "#eefbf4",
+              },
+              surface: {
+                950: "#0a1614",
+                900: "#0f1e1b",
+                800: "#152823",
+                700: "#1c352f",
+                600: "#24433b",
+              },
+              accent: {
+                brand: "#408A71",
+                glow: "#B0E4CC",
+                success: "#34d399",
+                warning: "#fbbf24",
+                error: "#f87171",
+                info: "#60a5fa",
+                cyan: "#22d3ee",
+                purple: "#a78bfa",
               },
             },
             fontFamily: {
               sans: ['"DM Sans"', "system-ui", "sans-serif"],
-              mono: ['"Geist Mono"', "monospace"],
+              mono: ['"JetBrains Mono"', "monospace"],
             },
           },
         },
@@ -58,207 +70,310 @@
       }
       * {
         scrollbar-width: thin;
-        scrollbar-color: #35373c transparent;
+        scrollbar-color: #285a48 transparent;
       }
       ::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+        width: 5px;
+        height: 5px;
       }
       ::-webkit-scrollbar-track {
         background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #35373c;
+        background: #285a48;
         border-radius: 3px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #404249;
+        background: #408a71;
       }
       body {
-        background: #313338;
-        color: #dbdee1;
+        background: #091413;
+        color: #b0e4cc;
+        font-family: "DM Sans", system-ui, sans-serif;
       }
       @keyframes fadeIn {
         from {
           opacity: 0;
-          transform: translateY(8px);
+          transform: translateY(6px);
         }
         to {
           opacity: 1;
           transform: translateY(0);
         }
       }
-      @keyframes pulse-dot {
+      @keyframes pulse-glow {
         0%,
         100% {
-          opacity: 1;
+          box-shadow: 0 0 4px #408a71;
         }
         50% {
-          opacity: 0.4;
+          box-shadow:
+            0 0 12px #408a71,
+            0 0 24px rgba(64, 138, 113, 0.3);
         }
       }
       @keyframes slideUp {
         from {
           opacity: 0;
-          transform: translateY(20px);
+          transform: translateY(16px);
         }
         to {
           opacity: 1;
           transform: translateY(0);
         }
       }
-      .animate-in {
-        animation: fadeIn 0.3s ease-out both;
+      .anim {
+        animation: fadeIn 0.25s ease-out both;
       }
-      .stagger-1 {
-        animation-delay: 0.05s;
+      .s1 {
+        animation-delay: 40ms;
       }
-      .stagger-2 {
-        animation-delay: 0.1s;
+      .s2 {
+        animation-delay: 80ms;
       }
-      .stagger-3 {
-        animation-delay: 0.15s;
+      .s3 {
+        animation-delay: 120ms;
       }
-      .stagger-4 {
-        animation-delay: 0.2s;
+      .s4 {
+        animation-delay: 160ms;
       }
       .tab-content {
         animation: fadeIn 0.2s ease-out;
       }
-      .status-dot {
+      .glow-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
         display: inline-block;
       }
-      .status-dot.online {
-        background: #23a559;
-        animation: pulse-dot 2s infinite;
+      .glow-dot.on {
+        background: #34d399;
+        box-shadow: 0 0 6px #34d399;
       }
-      .status-dot.degraded {
-        background: #f0b232;
-        animation: pulse-dot 1s infinite;
+      .glow-dot.warn {
+        background: #fbbf24;
+        box-shadow: 0 0 6px #fbbf24;
       }
-      .status-dot.offline {
-        background: #da373c;
-      }
-      .toast-enter {
-        animation: slideUp 0.3s ease-out;
-      }
-      .nav-item {
-        transition: all 0.15s ease;
-        border-radius: 6px;
-      }
-      .nav-item:hover {
-        background: #35373c;
-      }
-      .nav-item.active {
-        background: #404249;
-        color: #f2f3f5;
+      .glow-dot.off {
+        background: #f87171;
       }
       .card {
-        background: #2b2d31;
-        border-radius: 8px;
-        border: 1px solid #3f4147;
-      }
-      .badge {
-        padding: 2px 8px;
+        background: #0f1e1b;
+        border: 1px solid rgba(40, 90, 72, 0.4);
         border-radius: 10px;
+        transition: border-color 0.2s;
+      }
+      .card:hover {
+        border-color: rgba(64, 138, 113, 0.5);
+      }
+      .pill {
+        padding: 3px 10px;
+        border-radius: 20px;
         font-size: 11px;
         font-weight: 600;
+        letter-spacing: 0.03em;
         text-transform: uppercase;
-        letter-spacing: 0.02em;
       }
-      .badge-active {
-        background: rgba(35, 165, 89, 0.15);
-        color: #23a559;
+      .pill-active {
+        background: rgba(52, 211, 153, 0.12);
+        color: #34d399;
       }
-      .badge-rate_limited {
-        background: rgba(240, 178, 50, 0.15);
-        color: #f0b232;
+      .pill-rate_limited {
+        background: rgba(251, 191, 36, 0.12);
+        color: #fbbf24;
       }
-      .badge-invalid {
-        background: rgba(218, 55, 60, 0.15);
-        color: #da373c;
+      .pill-invalid {
+        background: rgba(248, 113, 113, 0.12);
+        color: #f87171;
       }
-      .badge-disabled {
-        background: rgba(148, 155, 164, 0.15);
-        color: #949ba4;
+      .pill-disabled {
+        background: rgba(176, 228, 204, 0.08);
+        color: rgba(176, 228, 204, 0.4);
       }
       .btn {
-        padding: 6px 14px;
-        border-radius: 4px;
+        padding: 7px 16px;
+        border-radius: 6px;
         font-size: 13px;
-        font-weight: 500;
-        transition: all 0.15s;
+        font-weight: 600;
         cursor: pointer;
+        transition: all 0.15s;
+        border: none;
       }
-      .btn-primary {
-        background: #5865f2;
-        color: #fff;
+      .btn-brand {
+        background: #408a71;
+        color: #091413;
       }
-      .btn-primary:hover {
-        background: #4752c4;
+      .btn-brand:hover {
+        background: #57a68a;
+        box-shadow: 0 0 16px rgba(64, 138, 113, 0.3);
       }
       .btn-danger {
-        background: #da373c;
-        color: #fff;
+        background: rgba(248, 113, 113, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(248, 113, 113, 0.2);
       }
       .btn-danger:hover {
-        background: #a12828;
+        background: rgba(248, 113, 113, 0.25);
       }
       .btn-ghost {
         background: transparent;
-        color: #949ba4;
-        border: 1px solid #3f4147;
+        color: #7ec4a8;
+        border: 1px solid rgba(40, 90, 72, 0.5);
       }
       .btn-ghost:hover {
-        background: #35373c;
-        color: #dbdee1;
+        background: rgba(40, 90, 72, 0.2);
+        border-color: #408a71;
       }
-      .input-field {
-        background: #1e1f22;
-        border: 1px solid #3f4147;
-        border-radius: 4px;
-        padding: 8px 12px;
-        color: #dbdee1;
+      .btn-warn {
+        background: rgba(251, 191, 36, 0.12);
+        color: #fbbf24;
+        border: 1px solid rgba(251, 191, 36, 0.2);
+      }
+      .btn-warn:hover {
+        background: rgba(251, 191, 36, 0.2);
+      }
+      .btn-success {
+        background: rgba(52, 211, 153, 0.12);
+        color: #34d399;
+        border: 1px solid rgba(52, 211, 153, 0.2);
+      }
+      .btn-success:hover {
+        background: rgba(52, 211, 153, 0.2);
+      }
+      .input-f {
+        background: #091413;
+        border: 1px solid rgba(40, 90, 72, 0.4);
+        border-radius: 6px;
+        padding: 9px 14px;
+        color: #b0e4cc;
         font-size: 14px;
         width: 100%;
-        transition: border-color 0.15s;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
       }
-      .input-field:focus {
+      .input-f:focus {
         outline: none;
-        border-color: #5865f2;
+        border-color: #408a71;
+        box-shadow: 0 0 0 3px rgba(64, 138, 113, 0.15);
+      }
+      .input-f::placeholder {
+        color: rgba(176, 228, 204, 0.3);
+      }
+      .nav-i {
+        transition: all 0.15s;
+        border-radius: 8px;
+        position: relative;
+      }
+      .nav-i:hover {
+        background: rgba(40, 90, 72, 0.2);
+      }
+      .nav-i.act {
+        background: rgba(64, 138, 113, 0.15);
+        color: #b0e4cc;
+      }
+      .nav-i.act::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 20%;
+        height: 60%;
+        width: 3px;
+        background: #408a71;
+        border-radius: 0 3px 3px 0;
       }
       .log-line {
-        font-size: 12px;
-        line-height: 1.6;
-        padding: 1px 0;
-        border-bottom: 1px solid rgba(63, 65, 71, 0.3);
+        font-size: 12.5px;
+        line-height: 1.7;
+        padding: 4px 0;
+        border-bottom: 1px solid rgba(40, 90, 72, 0.12);
       }
       .log-line:hover {
-        background: rgba(255, 255, 255, 0.02);
+        background: rgba(40, 90, 72, 0.06);
+      }
+      .level-pill {
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 700;
+        font-family: "JetBrains Mono", monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .level-info {
+        background: rgba(96, 165, 250, 0.15);
+        color: #60a5fa;
+      }
+      .level-warn {
+        background: rgba(251, 191, 36, 0.15);
+        color: #fbbf24;
+      }
+      .level-error {
+        background: rgba(248, 113, 113, 0.15);
+        color: #f87171;
+      }
+      .level-debug {
+        background: rgba(176, 228, 204, 0.08);
+        color: rgba(176, 228, 204, 0.4);
+      }
+      .level-success {
+        background: rgba(52, 211, 153, 0.15);
+        color: #34d399;
+      }
+      .acct-card {
+        background: #0f1e1b;
+        border: 1px solid rgba(40, 90, 72, 0.3);
+        border-radius: 12px;
+        padding: 20px;
+        transition: all 0.2s;
+      }
+      .acct-card:hover {
+        border-color: #408a71;
+        box-shadow: 0 4px 20px rgba(64, 138, 113, 0.08);
+      }
+      .toast-pop {
+        animation: slideUp 0.3s ease-out;
+      }
+      .filter-pill {
+        padding: 4px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1px solid rgba(40, 90, 72, 0.3);
+        color: #7ec4a8;
+        background: transparent;
+      }
+      .filter-pill:hover {
+        border-color: #408a71;
+        background: rgba(40, 90, 72, 0.1);
+      }
+      .filter-pill.on {
+        background: #408a71;
+        color: #091413;
+        border-color: #408a71;
       }
       @media (max-width: 767px) {
-        .desktop-sidebar {
+        .desk-sidebar {
           display: none;
         }
-        .main-content {
+        .main-c {
           margin-left: 0 !important;
-          padding-bottom: 72px;
+          padding-bottom: 76px;
         }
-        .mobile-header {
+        .mob-head {
           display: flex !important;
         }
-        .bottom-nav {
+        .bot-nav {
           display: flex !important;
         }
       }
       @media (min-width: 768px) {
-        .mobile-header {
+        .mob-head {
           display: none !important;
         }
-        .bottom-nav {
+        .bot-nav {
           display: none !important;
         }
       }
@@ -267,71 +382,76 @@
   <body class="font-sans min-h-screen" x-data="app()" x-init="init()">
     <!-- Mobile Header -->
     <header
-      class="mobile-header fixed top-0 left-0 right-0 z-40 bg-dc-panel border-b border-dc-border px-4 h-14 items-center justify-between"
-      style="display: none"
+      class="mob-head fixed top-0 left-0 right-0 z-40 border-b border-forest-600/30 px-4 h-14 items-center justify-between"
+      style="
+        display: none;
+        background: rgba(9, 20, 19, 0.95);
+        backdrop-filter: blur(12px);
+      "
     >
       <div class="flex items-center gap-3">
         <div
-          class="w-8 h-8 rounded-full bg-dc-brand flex items-center justify-center"
+          class="w-8 h-8 rounded-lg bg-forest-500 flex items-center justify-center"
         >
           <svg
-            width="16"
-            height="16"
+            width="15"
+            height="15"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="white"
-            stroke-width="2"
+            stroke="#091413"
+            stroke-width="2.5"
           >
             <path d="M12 2L2 7l10 5 10-5-10-5z" />
             <path d="M2 17l10 5 10-5" />
             <path d="M2 12l10 5 10-5" />
           </svg>
         </div>
-        <span class="font-semibold text-dc-heading text-sm"
+        <span class="font-bold text-forest-200 text-sm tracking-tight"
           >Claude API Pool</span
         >
         <span
-          class="status-dot"
-          :class="poolStatus === 'healthy' ? 'online' : poolStatus === 'degraded' ? 'degraded' : 'offline'"
+          class="glow-dot"
+          :class="poolStatus==='healthy'?'on':poolStatus==='degraded'?'warn':'off'"
         ></span>
       </div>
-      <div class="flex items-center gap-2">
-        <button
-          @click="refreshAll()"
-          class="p-2 rounded hover:bg-dc-hover text-dc-muted"
+      <button
+        @click="refreshAll()"
+        class="p-2 rounded-lg hover:bg-forest-600/20 text-forest-300"
+      >
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m0 0a9 9 0 019-9m-9 9a9 9 0 009 9"
-            />
-          </svg>
-        </button>
-      </div>
+          <path d="M1 4v6h6M23 20v-6h-6" />
+          <path
+            d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"
+          />
+        </svg>
+      </button>
     </header>
 
     <!-- Desktop Sidebar -->
     <aside
-      class="desktop-sidebar fixed left-0 top-0 bottom-0 w-60 bg-dc-sidebar border-r border-dc-border flex flex-col z-30"
+      class="desk-sidebar fixed left-0 top-0 bottom-0 w-[220px] border-r border-forest-600/20 flex flex-col z-30"
+      style="background: rgba(9, 20, 19, 0.97)"
     >
-      <div class="p-4 border-b border-dc-border">
+      <div class="p-5 pb-4">
         <div class="flex items-center gap-3">
           <div
-            class="w-9 h-9 rounded-full bg-dc-brand flex items-center justify-center shadow-lg shadow-dc-brand/20"
+            class="w-9 h-9 rounded-lg bg-forest-500 flex items-center justify-center"
+            style="box-shadow: 0 0 20px rgba(64, 138, 113, 0.2)"
           >
             <svg
-              width="18"
-              height="18"
+              width="17"
+              height="17"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="white"
-              stroke-width="2"
+              stroke="#091413"
+              stroke-width="2.5"
             >
               <path d="M12 2L2 7l10 5 10-5-10-5z" />
               <path d="M2 17l10 5 10-5" />
@@ -339,270 +459,1250 @@
             </svg>
           </div>
           <div>
-            <div class="font-bold text-dc-heading text-sm leading-tight">
+            <div
+              class="font-bold text-forest-100 text-[13px] tracking-tight leading-tight"
+            >
               Claude API Pool
             </div>
             <div class="flex items-center gap-1.5 mt-0.5">
               <span
-                class="status-dot"
-                :class="poolStatus === 'healthy' ? 'online' : poolStatus === 'degraded' ? 'degraded' : 'offline'"
-              ></span>
-              <span
-                class="text-[11px] text-dc-muted"
+                class="glow-dot"
+                style="width: 6px; height: 6px"
+                :class="poolStatus==='healthy'?'on':poolStatus==='degraded'?'warn':'off'"
+              ></span
+              ><span
+                class="text-[10px] text-forest-400"
                 x-text="poolStatus"
               ></span>
             </div>
           </div>
         </div>
       </div>
-
-      <nav class="flex-1 p-2 space-y-0.5 overflow-y-auto">
+      <nav class="flex-1 px-3 space-y-0.5 overflow-y-auto">
+        <div
+          class="text-[10px] text-forest-400/60 uppercase tracking-[.1em] font-semibold px-3 pt-3 pb-1"
+        >
+          Menu
+        </div>
         <template x-for="item in navItems" :key="item.id">
           <button
-            @click="activeTab = item.id"
-            class="nav-item w-full flex items-center gap-3 px-3 py-2 text-sm text-dc-muted"
-            :class="activeTab === item.id && 'active'"
+            @click="activeTab=item.id"
+            class="nav-i w-full flex items-center gap-3 px-3 py-[9px] text-[13px] text-forest-300"
+            :class="activeTab===item.id&&'act'"
           >
             <span
               x-html="item.icon"
-              class="w-5 h-5 flex items-center justify-center opacity-70"
+              class="w-[18px] h-[18px] flex items-center justify-center opacity-60"
             ></span>
             <span x-text="item.label"></span>
             <span
-              x-show="item.id === 'notifications' && unreadCount > 0"
-              class="ml-auto bg-dc-red text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center"
+              x-show="item.id==='notifications'&&unreadCount>0"
+              class="ml-auto bg-accent-error text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center"
               x-text="unreadCount"
             ></span>
           </button>
         </template>
       </nav>
-
-      <div class="p-3 border-t border-dc-border">
-        <div class="flex items-center gap-2 text-[11px] text-dc-muted">
-          <span>v1.0.0</span>
-          <span class="mx-1 opacity-30">|</span>
-          <span x-text="'Up ' + formatUptime(serverUptime)"></span>
+      <div class="p-4 border-t border-forest-600/15">
+        <div class="flex items-center gap-2 text-[10px] text-forest-400/50">
+          <span>v1.1.0</span><span class="opacity-30">|</span
+          ><span x-text="'Up '+formatUptime(serverUptime)"></span>
         </div>
       </div>
     </aside>
 
     <!-- Mobile Bottom Nav -->
     <nav
-      class="bottom-nav fixed bottom-0 left-0 right-0 z-40 bg-dc-panel border-t border-dc-border"
-      style="display: none; padding-bottom: env(safe-area-inset-bottom)"
+      class="bot-nav fixed bottom-0 left-0 right-0 z-40 border-t border-forest-600/20"
+      style="
+        display: none;
+        background: rgba(9, 20, 19, 0.97);
+        backdrop-filter: blur(12px);
+        padding-bottom: env(safe-area-inset-bottom);
+      "
     >
       <div class="flex justify-around items-center h-16">
-        <template x-for="item in mobileNavItems" :key="item.id">
+        <template x-for="item in mobileNav" :key="item.id">
           <button
-            @click="activeTab = item.id"
-            class="flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all"
-            :class="activeTab === item.id ? 'text-dc-brand' : 'text-dc-muted'"
+            @click="activeTab=item.id"
+            class="flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all"
+            :class="activeTab===item.id?'text-forest-200':'text-forest-400/50'"
           >
             <span x-html="item.icon" class="w-5 h-5"></span>
-            <span class="text-[10px] font-medium" x-text="item.label"></span>
+            <span
+              class="text-[9px] font-semibold tracking-wide"
+              x-text="item.label"
+            ></span>
+            <div
+              x-show="activeTab===item.id"
+              class="w-1 h-1 rounded-full bg-forest-500 mt-0.5"
+            ></div>
           </button>
         </template>
       </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="main-content md:ml-60 min-h-screen pt-14 md:pt-0">
-      <div class="p-4 md:p-6 max-w-[1400px] mx-auto">
-        <!-- Dashboard Tab -->
+    <!-- Main -->
+    <main class="main-c md:ml-[220px] min-h-screen pt-14 md:pt-0">
+      <div class="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto">
+        <!-- ========== DASHBOARD TAB ========== -->
         <div
-          x-show="activeTab === 'dashboard'"
+          x-show="activeTab==='dashboard'"
           x-cloak
-          class="tab-content space-y-4"
+          class="tab-content space-y-5"
         >
-          <h2 class="text-lg font-bold text-dc-heading mb-4 animate-in">
-            Dashboard
-          </h2>
-
-          <!-- Stats Grid -->
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-            <template x-for="(stat, i) in dashboardStats" :key="stat.label">
-              <div
-                class="card p-3 animate-in"
-                :class="'stagger-' + (i % 4 + 1)"
-              >
-                <div
-                  class="text-[11px] text-dc-muted uppercase tracking-wider"
-                  x-text="stat.label"
-                ></div>
-                <div
-                  class="text-xl font-bold mt-1"
-                  :class="stat.color"
-                  x-text="stat.value"
-                ></div>
-              </div>
-            </template>
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-forest-100">Dashboard</h2>
+            <span
+              class="text-[11px] text-forest-400/50"
+              x-text="'Last update: '+lastUpdate"
+            ></span>
           </div>
-
-          <!-- Request Stats -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <template x-for="(s,i) in dashStats" :key="s.label"
+              ><div class="card p-3.5 anim" :class="'s'+(i%4+1)">
+                <div
+                  class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold"
+                  x-text="s.label"
+                ></div>
+                <div
+                  class="text-2xl font-bold mt-1.5"
+                  :class="s.color"
+                  x-text="s.value"
+                ></div></div
+            ></template>
+          </div>
           <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div class="card p-3 animate-in stagger-1">
-              <div class="text-[11px] text-dc-muted uppercase tracking-wider">
+            <div class="card p-3.5 anim s1">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold"
+              >
                 Total Requests
               </div>
               <div
-                class="text-xl font-bold text-dc-heading"
-                x-text="stats.requests?.total || 0"
+                class="text-2xl font-bold text-forest-100 mt-1"
+                x-text="stats.requests?.total||0"
               ></div>
             </div>
-            <div class="card p-3 animate-in stagger-2">
-              <div class="text-[11px] text-dc-muted uppercase tracking-wider">
+            <div class="card p-3.5 anim s2">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold"
+              >
                 Req/Min
               </div>
               <div
-                class="text-xl font-bold text-dc-cyan"
-                x-text="stats.requests?.perMinute || 0"
+                class="text-2xl font-bold text-accent-cyan mt-1"
+                x-text="stats.requests?.perMinute||0"
               ></div>
             </div>
-            <div class="card p-3 animate-in stagger-3">
-              <div class="text-[11px] text-dc-muted uppercase tracking-wider">
+            <div class="card p-3.5 anim s3">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold"
+              >
                 Success Rate
               </div>
               <div
-                class="text-xl font-bold text-dc-green"
-                x-text="successRate + '%'"
+                class="text-2xl font-bold text-accent-success mt-1"
+                x-text="successRate+'%'"
               ></div>
             </div>
-            <div class="card p-3 animate-in stagger-4">
-              <div class="text-[11px] text-dc-muted uppercase tracking-wider">
+            <div class="card p-3.5 anim s4">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold"
+              >
                 Avg Response
               </div>
               <div
-                class="text-xl font-bold text-dc-purple"
-                x-text="(stats.requests?.avgResponseTime || 0) + 'ms'"
+                class="text-2xl font-bold text-accent-purple mt-1"
+                x-text="(stats.requests?.avgResponseTime||0)+'ms'"
               ></div>
             </div>
           </div>
-
-          <!-- Chart -->
-          <div class="card p-4 animate-in stagger-3">
+          <div class="card p-5 anim s3">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-sm font-semibold text-dc-heading">
+              <h3 class="text-sm font-semibold text-forest-200">
                 Request Distribution
               </h3>
             </div>
-            <div class="h-48"><canvas id="reqChart"></canvas></div>
+            <div class="h-52"><canvas id="reqChart"></canvas></div>
           </div>
         </div>
 
-        <!-- Accounts Tab -->
+        <!-- ========== ACCOUNTS TAB ========== -->
         <div
-          x-show="activeTab === 'accounts'"
+          x-show="activeTab==='accounts'"
+          x-cloak
+          class="tab-content space-y-5"
+        >
+          <!-- Header -->
+          <div class="card p-5 anim">
+            <div
+              class="text-[10px] text-forest-400/50 uppercase tracking-[.12em] font-semibold mb-1"
+            >
+              Pool Operations
+            </div>
+            <div
+              class="flex flex-col md:flex-row md:items-center justify-between gap-3"
+            >
+              <div>
+                <h2 class="text-xl font-bold text-forest-100">
+                  Account Pool Command Center
+                </h2>
+                <p class="text-[13px] text-forest-400/70 mt-0.5">
+                  Manage API key routing, monitor health, and keep rotation
+                  resilient.
+                </p>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span
+                  class="pill"
+                  :class="stats.active>0?'pill-active':'pill-disabled'"
+                  >Pool <span x-text="stats.active>0?'Enabled':'Empty'"></span
+                ></span>
+                <span class="text-xs text-forest-400/60"
+                  >Strategy:
+                  <strong
+                    class="text-forest-200"
+                    x-text="settingsForm.strategy"
+                  ></strong
+                ></span>
+              </div>
+            </div>
+          </div>
+          <!-- Stats Row -->
+          <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            <div class="card p-4">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Configured
+              </div>
+              <div
+                class="text-2xl font-bold text-forest-100 mt-1"
+                x-text="stats.total||0"
+              ></div>
+            </div>
+            <div class="card p-4">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Healthy
+              </div>
+              <div
+                class="text-2xl font-bold text-accent-success mt-1"
+                x-text="stats.active||0"
+              ></div>
+            </div>
+            <div class="card p-4">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Rate Limited
+              </div>
+              <div
+                class="text-2xl font-bold text-accent-warning mt-1"
+                x-text="stats.rateLimited||0"
+              ></div>
+            </div>
+            <div class="card p-4">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Invalid
+              </div>
+              <div
+                class="text-2xl font-bold text-accent-error mt-1"
+                x-text="stats.invalid||0"
+              ></div>
+            </div>
+            <div class="card p-4 hidden lg:block">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Disabled
+              </div>
+              <div
+                class="text-2xl font-bold text-forest-400/40 mt-1"
+                x-text="stats.disabled||0"
+              ></div>
+            </div>
+          </div>
+          <!-- Pool Config + Add -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card p-5">
+              <h3 class="text-sm font-semibold text-forest-200 mb-1">
+                Pool Configuration
+              </h3>
+              <p class="text-[12px] text-forest-400/50 mb-4">
+                Tune how requests are distributed across your API key pool.
+              </p>
+              <div>
+                <label
+                  class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1.5"
+                  >Selection Strategy</label
+                ><select
+                  x-model="settingsForm.strategy"
+                  @change="saveSettings()"
+                  class="input-f"
+                >
+                  <option value="round-robin">
+                    Round Robin (rotate each request)
+                  </option>
+                  <option value="weighted">Weighted Round Robin</option>
+                  <option value="least-used">
+                    Least Used (fewest in-flight)
+                  </option>
+                  <option value="priority">Priority Based</option>
+                  <option value="random">Random</option>
+                </select>
+              </div>
+            </div>
+            <div class="card p-5">
+              <h3 class="text-sm font-semibold text-forest-200 mb-1">
+                Add Account
+              </h3>
+              <p class="text-[12px] text-forest-400/50 mb-4">
+                Add an Anthropic API key to expand pool capacity.
+              </p>
+              <div class="space-y-3">
+                <input
+                  x-model="newAccount.name"
+                  class="input-f text-sm"
+                  placeholder="Label (e.g. work, personal)"
+                />
+                <div class="flex gap-2">
+                  <input
+                    x-model="newAccount.apiKey"
+                    type="password"
+                    class="input-f text-sm font-mono flex-1"
+                    placeholder="sk-ant-api03-..."
+                  /><button
+                    @click="addAccount()"
+                    :disabled="addLoading"
+                    class="btn btn-brand whitespace-nowrap"
+                    :class="addLoading&&'opacity-50'"
+                  >
+                    <span x-text="addLoading?'Adding...':'+ Add Key'"></span>
+                  </button>
+                </div>
+                <div
+                  x-show="addError"
+                  class="text-xs text-accent-error"
+                  x-text="addError"
+                ></div>
+              </div>
+            </div>
+          </div>
+          <!-- Account Cards -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <div>
+                <h3 class="text-sm font-semibold text-forest-200">
+                  Accounts
+                  <span
+                    class="text-forest-400/40 font-normal"
+                    x-text="'('+accounts.length+' total)'"
+                  ></span>
+                </h3>
+                <p class="text-[11px] text-forest-400/40">
+                  Operational cards with usage visibility and account actions.
+                </p>
+              </div>
+              <div class="flex items-center gap-1.5" x-show="accounts.length>0">
+                <span class="text-[11px] text-forest-400/40 mr-1"
+                  >Active strategy:</span
+                ><strong
+                  class="text-[11px] text-forest-200"
+                  x-text="settingsForm.strategy"
+                ></strong>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <template x-for="acc in accounts" :key="acc.id">
+                <div class="acct-card">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-3">
+                      <div
+                        class="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold"
+                        :class="acc.status==='active'?'bg-forest-500/20 text-forest-300':'bg-surface-800 text-forest-400/40'"
+                        x-text="acc.name.charAt(0).toUpperCase()"
+                      ></div>
+                      <div>
+                        <div
+                          class="font-semibold text-forest-100 text-sm"
+                          x-text="acc.name"
+                        ></div>
+                        <div
+                          class="text-[11px] text-forest-400/40 font-mono"
+                          x-text="acc.apiKey"
+                        ></div>
+                      </div>
+                    </div>
+                    <span
+                      class="pill"
+                      :class="'pill-'+acc.status"
+                      x-text="acc.status"
+                    ></span>
+                  </div>
+                  <div class="grid grid-cols-4 gap-2 mb-4">
+                    <div>
+                      <div
+                        class="text-[9px] text-forest-400/40 uppercase tracking-wider"
+                      >
+                        Requests
+                      </div>
+                      <div
+                        class="text-sm font-bold text-forest-200"
+                        x-text="acc.usage.total"
+                      ></div>
+                    </div>
+                    <div>
+                      <div
+                        class="text-[9px] text-forest-400/40 uppercase tracking-wider"
+                      >
+                        Errors
+                      </div>
+                      <div
+                        class="text-sm font-bold"
+                        :class="acc.usage.failed>0?'text-accent-error':'text-forest-200'"
+                        x-text="acc.usage.failed"
+                      ></div>
+                    </div>
+                    <div>
+                      <div
+                        class="text-[9px] text-forest-400/40 uppercase tracking-wider"
+                      >
+                        Success
+                      </div>
+                      <div
+                        class="text-sm font-bold text-accent-success"
+                        x-text="acc.usage.total>0?Math.round(acc.usage.success/acc.usage.total*100)+'%':'-'"
+                      ></div>
+                    </div>
+                    <div>
+                      <div
+                        class="text-[9px] text-forest-400/40 uppercase tracking-wider"
+                      >
+                        Last Used
+                      </div>
+                      <div
+                        class="text-sm font-bold text-forest-300"
+                        x-text="acc.metadata.lastUsedAt?timeAgo(acc.metadata.lastUsedAt):'Never'"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="flex gap-2">
+                    <button
+                      x-show="acc.status!=='disabled'"
+                      @click="apiCall('/api/dashboard/accounts/'+acc.id+'/disable','POST')"
+                      class="btn btn-ghost text-[11px] py-1.5 flex-1"
+                    >
+                      Disable
+                    </button>
+                    <button
+                      x-show="acc.status==='disabled'||acc.status==='invalid'"
+                      @click="apiCall('/api/dashboard/accounts/'+acc.id+'/enable','POST')"
+                      class="btn btn-success text-[11px] py-1.5 flex-1"
+                    >
+                      Enable
+                    </button>
+                    <button
+                      x-show="acc.status==='rate_limited'"
+                      @click="apiCall('/api/dashboard/accounts/'+acc.id+'/reset-rate-limit','POST')"
+                      class="btn btn-warn text-[11px] py-1.5 flex-1"
+                    >
+                      Reset Limit
+                    </button>
+                    <button
+                      @click="confirmDelete(acc)"
+                      class="btn btn-danger text-[11px] py-1.5"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+            <div x-show="accounts.length===0" class="card p-16 text-center">
+              <svg
+                class="w-12 h-12 mx-auto mb-3 text-forest-600/40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                />
+              </svg>
+              <div class="text-sm text-forest-400/50">
+                No API keys added yet
+              </div>
+              <button
+                @click="activeTab='accounts'"
+                class="btn btn-brand mt-3 text-xs"
+              >
+                Add your first key
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== LOGS TAB ========== -->
+        <div x-show="activeTab==='logs'" x-cloak class="tab-content space-y-4">
+          <div class="card p-5 anim">
+            <div
+              class="text-[10px] text-forest-400/50 uppercase tracking-[.12em] font-semibold mb-1"
+            >
+              Runtime Telemetry
+            </div>
+            <div
+              class="flex flex-col md:flex-row md:items-center justify-between gap-3"
+            >
+              <div>
+                <h2 class="text-xl font-bold text-forest-100">
+                  Server Logs Command Center
+                </h2>
+                <p class="text-[13px] text-forest-400/70 mt-0.5">
+                  Monitor real-time events, isolate noisy signals, and export
+                  filtered logs.
+                </p>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <span
+                  class="pill"
+                  :class="logsConnected?'pill-active':'pill-disabled'"
+                  ><span
+                    class="glow-dot mr-1"
+                    style="width: 5px; height: 5px"
+                    :class="logsConnected?'on':'off'"
+                  ></span
+                  ><span x-text="logsConnected?'Connected':'Offline'"></span
+                ></span>
+                <span class="pill pill-active" x-show="!logsPaused"
+                  >Stream Live</span
+                >
+                <button
+                  @click="logs=[];logStats.total=0"
+                  class="btn btn-danger text-[11px] py-1"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- Log Stats -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="card p-3.5">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Total Logs
+              </div>
+              <div
+                class="text-xl font-bold text-forest-100 mt-1"
+                x-text="logStats.total"
+              ></div>
+            </div>
+            <div class="card p-3.5">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Visible
+              </div>
+              <div
+                class="text-xl font-bold text-accent-success mt-1"
+                x-text="filteredLogs.length"
+              ></div>
+            </div>
+            <div class="card p-3.5">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Errors
+              </div>
+              <div
+                class="text-xl font-bold text-accent-error mt-1"
+                x-text="logStats.errors"
+              ></div>
+            </div>
+            <div class="card p-3.5">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Auto-Scroll
+              </div>
+              <div
+                class="text-xl font-bold mt-1"
+                :class="logsAutoScroll?'text-accent-success':'text-forest-400/40'"
+                x-text="logsAutoScroll?'Enabled':'Disabled'"
+              ></div>
+            </div>
+          </div>
+          <!-- Search + Filters -->
+          <div class="card p-4 space-y-3">
+            <div class="flex gap-2">
+              <div class="flex-1 relative">
+                <svg
+                  class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-forest-400/30"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="M21 21l-4.35-4.35" /></svg
+                ><input
+                  x-model="logsSearch"
+                  class="input-f pl-9 text-sm"
+                  placeholder="Search by message or level..."
+                />
+              </div>
+              <button
+                @click="logsSearch='';logsFilter='all'"
+                class="btn btn-ghost text-[11px]"
+              >
+                Reset Filters
+              </button>
+            </div>
+            <div class="flex flex-col md:flex-row gap-4">
+              <div>
+                <div
+                  class="text-[10px] text-forest-400/40 uppercase tracking-[.08em] font-semibold mb-2"
+                >
+                  Level Filter
+                </div>
+                <div class="flex gap-1.5 flex-wrap">
+                  <template
+                    x-for="lv in ['all','info','warn','error','debug']"
+                    :key="lv"
+                    ><button
+                      @click="logsFilter=lv"
+                      class="filter-pill"
+                      :class="logsFilter===lv&&'on'"
+                      x-text="lv.charAt(0).toUpperCase()+lv.slice(1)"
+                    ></button
+                  ></template>
+                </div>
+              </div>
+              <div class="md:ml-auto">
+                <div
+                  class="text-[10px] text-forest-400/40 uppercase tracking-[.08em] font-semibold mb-2"
+                >
+                  Stream Controls
+                </div>
+                <div class="flex gap-1.5">
+                  <button
+                    @click="logsPaused=!logsPaused"
+                    class="filter-pill"
+                    :class="logsPaused&&'on bg-accent-warning/20 text-accent-warning border-accent-warning/30'"
+                    x-text="logsPaused?'Resume':'Pause'"
+                  ></button
+                  ><button
+                    @click="logsAutoScroll=!logsAutoScroll"
+                    class="filter-pill"
+                    :class="logsAutoScroll&&'on'"
+                  >
+                    Auto-scroll
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Live Stream -->
+          <div class="card overflow-hidden">
+            <div
+              class="flex items-center justify-between px-4 py-3 border-b border-forest-600/15"
+            >
+              <h3 class="text-sm font-semibold text-forest-200">Live Stream</h3>
+              <span class="text-[11px] text-forest-400/40"
+                >Showing
+                <strong
+                  class="text-accent-success"
+                  x-text="filteredLogs.length"
+                ></strong>
+                of
+                <strong
+                  class="text-forest-300"
+                  x-text="logStats.total"
+                ></strong>
+                entries</span
+              >
+            </div>
+            <div
+              x-ref="logsContainer"
+              class="h-[calc(100vh-520px)] md:h-[calc(100vh-480px)] overflow-y-auto p-4 font-mono"
+            >
+              <template x-for="log in filteredLogs" :key="log._id"
+                ><div class="log-line flex gap-3 items-start">
+                  <span
+                    class="text-forest-400/30 whitespace-nowrap text-[11px] shrink-0 w-16"
+                    x-text="new Date(log.timestamp).toLocaleTimeString('en-GB',{hour12:false})"
+                  ></span
+                  ><span
+                    class="level-pill shrink-0"
+                    :class="'level-'+(log.level==='info'&&log.message?.includes('200')?'success':log.level)"
+                    x-text="log.level"
+                  ></span
+                  ><span
+                    class="text-[12px] text-forest-200/90 break-all leading-relaxed"
+                    x-text="log.message"
+                  ></span></div
+              ></template>
+              <div
+                x-show="filteredLogs.length===0"
+                class="text-center text-forest-400/30 py-12 text-sm"
+                x-text="logsConnected?'Waiting for logs...':'Connecting...'"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== HISTORY TAB ========== -->
+        <div
+          x-show="activeTab==='history'"
           x-cloak
           class="tab-content space-y-4"
         >
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-dc-heading">Accounts</h2>
-            <button @click="showAddModal = true" class="btn btn-primary">
-              + Add Key
-            </button>
+          <div class="card p-5 anim">
+            <div
+              class="flex flex-col md:flex-row md:items-center justify-between gap-3"
+            >
+              <div>
+                <div
+                  class="text-[10px] text-forest-400/50 uppercase tracking-[.12em] font-semibold mb-1"
+                >
+                  Request Logs
+                </div>
+                <h2 class="text-xl font-bold text-forest-100">History</h2>
+              </div>
+              <div class="flex items-center gap-2">
+                <span
+                  class="text-[11px] text-forest-400/40"
+                  x-text="'Last refresh: '+lastUpdate"
+                ></span
+                ><button
+                  @click="clearHistory()"
+                  class="btn btn-ghost text-[11px]"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
           </div>
-
+          <!-- Stats -->
+          <div
+            class="grid grid-cols-2 md:grid-cols-4 gap-3"
+            x-show="historyStats.totalRequests>0"
+          >
+            <div class="card p-3.5">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Total
+              </div>
+              <div
+                class="text-xl font-bold text-forest-100 mt-1"
+                x-text="historyStats.totalRequests||0"
+              ></div>
+            </div>
+            <div class="card p-3.5">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Avg Time
+              </div>
+              <div
+                class="text-xl font-bold text-accent-cyan mt-1"
+                x-text="(historyStats.avgResponseTime||0)+'ms'"
+              ></div>
+            </div>
+            <div class="card p-3.5">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Success
+              </div>
+              <div
+                class="text-xl font-bold text-accent-success mt-1"
+                x-text="historyStats.byStatus?.success||0"
+              ></div>
+            </div>
+            <div class="card p-3.5">
+              <div
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold"
+              >
+                Errors
+              </div>
+              <div
+                class="text-xl font-bold text-accent-error mt-1"
+                x-text="historyStats.byStatus?.error||0"
+              ></div>
+            </div>
+          </div>
+          <!-- History Table -->
           <div class="card overflow-hidden">
+            <div
+              class="flex items-center gap-2 px-4 py-3 border-b border-forest-600/15"
+            >
+              <select
+                x-model="historyFilter.status"
+                @change="fetchHistory()"
+                class="input-f text-xs py-1.5 px-3 w-auto"
+              >
+                <option value="">All Status</option>
+                <option value="success">Success</option>
+                <option value="error">Error</option>
+              </select>
+              <div class="ml-auto text-[11px] text-forest-400/40">
+                <span x-text="historyEntries.length"></span> entries
+              </div>
+            </div>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="w-full text-[12px]">
                 <thead>
                   <tr
-                    class="text-[11px] text-dc-muted uppercase tracking-wider border-b border-dc-border"
+                    class="text-[10px] text-forest-400/40 uppercase tracking-[.06em] border-b border-forest-600/15"
                   >
-                    <th class="text-left p-3">Name</th>
-                    <th class="text-left p-3 hidden md:table-cell">API Key</th>
-                    <th class="text-left p-3">Status</th>
-                    <th class="text-right p-3 hidden sm:table-cell">
-                      Requests
+                    <th class="text-left p-3 font-semibold">Time</th>
+                    <th
+                      class="text-left p-3 font-semibold hidden sm:table-cell"
+                    >
+                      ID
                     </th>
-                    <th class="text-right p-3 hidden md:table-cell">Success</th>
-                    <th class="text-left p-3 hidden lg:table-cell">
-                      Last Used
+                    <th
+                      class="text-left p-3 font-semibold hidden md:table-cell"
+                    >
+                      Model
                     </th>
-                    <th class="text-right p-3">Actions</th>
+                    <th
+                      class="text-left p-3 font-semibold hidden lg:table-cell"
+                    >
+                      Account
+                    </th>
+                    <th class="text-right p-3 font-semibold">Status</th>
+                    <th
+                      class="text-right p-3 font-semibold hidden sm:table-cell"
+                    >
+                      Time
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <template x-for="account in accounts" :key="account.id">
+                  <template x-for="e in historyEntries" :key="e.id">
                     <tr
-                      class="border-b border-dc-border/50 hover:bg-dc-hover/30 transition-colors"
+                      class="border-b border-forest-600/10 hover:bg-forest-600/5 transition-colors"
                     >
-                      <td class="p-3">
-                        <div
-                          class="font-medium text-dc-heading"
-                          x-text="account.name"
-                        ></div>
-                        <div
-                          class="text-[11px] text-dc-muted font-mono md:hidden"
-                          x-text="account.apiKey"
-                        ></div>
-                      </td>
-                      <td class="p-3 hidden md:table-cell">
-                        <code
-                          class="text-[11px] text-dc-muted font-mono"
-                          x-text="account.apiKey"
-                        ></code>
-                      </td>
-                      <td class="p-3">
+                      <td
+                        class="p-3 text-forest-300 font-mono whitespace-nowrap"
+                        x-text="new Date(e.timestamp).toLocaleString('en-GB',{hour12:false})"
+                      ></td>
+                      <td class="p-3 hidden sm:table-cell">
                         <span
-                          class="badge"
-                          :class="'badge-' + account.status"
-                          x-text="account.status"
+                          class="text-forest-400/50 font-mono text-[11px]"
+                          x-text="e.id.slice(0,20)+'...'"
                         ></span>
                       </td>
                       <td
-                        class="p-3 text-right hidden sm:table-cell font-mono text-xs"
-                        x-text="account.usage.total"
+                        class="p-3 hidden md:table-cell text-forest-300"
+                        x-text="e.model||'-'"
                       ></td>
                       <td
-                        class="p-3 text-right hidden md:table-cell font-mono text-xs"
-                        x-text="account.usage.total > 0 ? Math.round(account.usage.success / account.usage.total * 100) + '%' : '-'"
-                      ></td>
-                      <td
-                        class="p-3 hidden lg:table-cell text-[11px] text-dc-muted"
-                        x-text="account.metadata.lastUsedAt ? timeAgo(account.metadata.lastUsedAt) : 'Never'"
+                        class="p-3 hidden lg:table-cell text-forest-400/60"
+                        x-text="e.accountName||e.accountId?.slice(0,8)"
                       ></td>
                       <td class="p-3 text-right">
-                        <div class="flex items-center justify-end gap-1">
-                          <button
-                            x-show="account.status !== 'disabled'"
-                            @click="apiCall('/api/dashboard/accounts/' + account.id + '/disable', 'POST')"
-                            class="btn btn-ghost text-[11px] py-1 px-2"
-                          >
-                            Disable
-                          </button>
-                          <button
-                            x-show="account.status === 'disabled' || account.status === 'invalid'"
-                            @click="apiCall('/api/dashboard/accounts/' + account.id + '/enable', 'POST')"
-                            class="btn text-[11px] py-1 px-2 bg-dc-green/20 text-dc-green hover:bg-dc-green/30"
-                          >
-                            Enable
-                          </button>
-                          <button
-                            x-show="account.status === 'rate_limited'"
-                            @click="apiCall('/api/dashboard/accounts/' + account.id + '/reset-rate-limit', 'POST')"
-                            class="btn text-[11px] py-1 px-2 bg-dc-yellow/20 text-dc-yellow hover:bg-dc-yellow/30"
-                          >
-                            Reset
-                          </button>
-                          <button
-                            @click="confirmDelete(account)"
-                            class="btn btn-ghost text-[11px] py-1 px-2 text-dc-red hover:bg-dc-red/10 hover:border-dc-red/30"
-                          >
-                            Del
-                          </button>
-                        </div>
+                        <span
+                          class="font-mono font-semibold"
+                          :class="e.statusCode<300?'text-accent-success':e.statusCode<500?'text-accent-warning':'text-accent-error'"
+                          x-text="e.statusCode"
+                        ></span>
                       </td>
+                      <td
+                        class="p-3 text-right hidden sm:table-cell text-forest-400/50 font-mono"
+                        x-text="e.responseTime+'ms'"
+                      ></td>
                     </tr>
                   </template>
                 </tbody>
               </table>
               <div
-                x-show="accounts.length === 0"
-                class="p-12 text-center text-dc-muted"
+                x-show="historyEntries.length===0"
+                class="p-12 text-center text-forest-400/30 text-sm"
+              >
+                No request history yet
+              </div>
+            </div>
+            <!-- Pagination -->
+            <div
+              x-show="historyEntries.length>0"
+              class="flex items-center justify-between px-4 py-3 border-t border-forest-600/15"
+            >
+              <div class="flex gap-2">
+                <button
+                  @click="historyPage=Math.max(1,historyPage-1);fetchHistory()"
+                  :disabled="historyPage<=1"
+                  class="btn btn-ghost text-[11px] py-1 disabled:opacity-30"
+                >
+                  &larr;</button
+                ><button
+                  @click="historyPage++;fetchHistory()"
+                  class="btn btn-ghost text-[11px] py-1"
+                >
+                  &rarr;
+                </button>
+              </div>
+              <div class="text-[11px] text-forest-400/40">
+                Page <span x-text="historyPage"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== USAGE TAB ========== -->
+        <div x-show="activeTab==='usage'" x-cloak class="tab-content space-y-5">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-forest-100">Usage Overview</h2>
+            <button
+              @click="fetchUsage()"
+              class="btn btn-ghost text-[11px] py-1.5"
+            >
+              Refresh
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 anim">
+            <div class="card p-4 text-center">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold mb-1"
+              >
+                Total Requests
+              </div>
+              <div
+                class="text-2xl font-bold text-forest-100"
+                x-text="usageData.totalRequests||0"
+              ></div>
+            </div>
+            <div class="card p-4 text-center">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold mb-1"
+              >
+                Input Tokens
+              </div>
+              <div
+                class="text-2xl font-bold text-accent-cyan"
+                x-text="formatTokens(usageData.totalInputTokens||0)"
+              ></div>
+            </div>
+            <div class="card p-4 text-center">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold mb-1"
+              >
+                Output Tokens
+              </div>
+              <div
+                class="text-2xl font-bold text-accent-purple"
+                x-text="formatTokens(usageData.totalOutputTokens||0)"
+              ></div>
+            </div>
+            <div class="card p-4 text-center">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold mb-1"
+              >
+                Total Tokens
+              </div>
+              <div
+                class="text-2xl font-bold text-forest-200"
+                x-text="formatTokens(usageData.totalTokens||0)"
+              ></div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="card p-5 anim s1">
+              <h3
+                class="text-sm font-semibold text-forest-200 mb-4 flex items-center gap-2"
               >
                 <svg
-                  class="w-10 h-10 mx-auto mb-3 opacity-30"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path d="M18 20V10M12 20V4M6 20v-6" />
+                </svg>
+                Usage by Model
+              </h3>
+              <div class="space-y-3">
+                <template x-for="m in (usageData.byModel||[])" :key="m.model">
+                  <div>
+                    <div class="flex justify-between text-[12px] mb-1">
+                      <span
+                        class="text-forest-300 font-mono truncate max-w-[200px]"
+                        x-text="m.model"
+                      ></span>
+                      <span class="text-forest-400/70">
+                        <span x-text="formatTokens(m.totalTokens)"></span>
+                        tokens
+                      </span>
+                    </div>
+                    <div
+                      class="w-full h-2 rounded-full overflow-hidden"
+                      style="background: rgba(40, 90, 72, 0.2)"
+                    >
+                      <div
+                        class="h-full rounded-full transition-all duration-500"
+                        :style="'width:'+Math.min(100,m.percentage||0)+'%;background:linear-gradient(90deg,#408A71,#22d3ee)'"
+                      ></div>
+                    </div>
+                    <div
+                      class="flex justify-between text-[10px] text-forest-400/50 mt-0.5"
+                    >
+                      <span
+                        x-text="m.requests+' request'+(m.requests!==1?'s':'')"
+                      ></span>
+                      <span
+                        x-text="m.percentage?m.percentage.toFixed(1)+'%':'0%'"
+                      ></span>
+                    </div>
+                  </div>
+                </template>
+                <div
+                  x-show="!(usageData.byModel||[]).length"
+                  class="text-center text-forest-400/40 text-[12px] py-6"
+                >
+                  No usage data yet
+                </div>
+              </div>
+            </div>
+
+            <div class="card p-5 anim s2">
+              <h3
+                class="text-sm font-semibold text-forest-200 mb-4 flex items-center gap-2"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+                Hourly Usage (Last 24h)
+              </h3>
+              <div style="height: 200px" class="relative">
+                <canvas id="usageHourlyChart"></canvas>
+              </div>
+              <div
+                x-show="!(usageData.hourly||[]).length"
+                class="text-center text-forest-400/40 text-[12px] py-6 absolute inset-0 flex items-center justify-center"
+              >
+                No hourly data yet
+              </div>
+            </div>
+          </div>
+
+          <div class="card p-5 anim s3">
+            <h3
+              class="text-sm font-semibold text-forest-200 mb-4 flex items-center gap-2"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                />
+              </svg>
+              Usage per Account
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-[12px]">
+                <thead>
+                  <tr class="border-b border-forest-600/20">
+                    <th class="text-left py-2 text-forest-400/60 font-semibold">
+                      Account
+                    </th>
+                    <th
+                      class="text-right py-2 text-forest-400/60 font-semibold"
+                    >
+                      Requests
+                    </th>
+                    <th
+                      class="text-right py-2 text-forest-400/60 font-semibold"
+                    >
+                      Input
+                    </th>
+                    <th
+                      class="text-right py-2 text-forest-400/60 font-semibold"
+                    >
+                      Output
+                    </th>
+                    <th
+                      class="text-right py-2 text-forest-400/60 font-semibold"
+                    >
+                      Cost
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template
+                    x-for="a in (usageData.byAccount||[])"
+                    :key="a.accountId"
+                  >
+                    <tr
+                      class="border-b border-forest-600/10 hover:bg-forest-600/5"
+                    >
+                      <td
+                        class="py-2 text-forest-200"
+                        x-text="a.accountName"
+                      ></td>
+                      <td
+                        class="py-2 text-right font-mono text-forest-300"
+                        x-text="a.totalRequests"
+                      ></td>
+                      <td
+                        class="py-2 text-right font-mono text-accent-cyan"
+                        x-text="formatTokens(a.totalInputTokens)"
+                      ></td>
+                      <td
+                        class="py-2 text-right font-mono text-accent-purple"
+                        x-text="formatTokens(a.totalOutputTokens)"
+                      ></td>
+                      <td
+                        class="py-2 text-right font-mono text-accent-warning"
+                        x-text="'$'+a.totalCost.toFixed(4)"
+                      ></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+              <div
+                x-show="!(usageData.byAccount||[]).length"
+                class="text-center text-forest-400/40 text-[12px] py-6"
+              >
+                No account usage data
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== COST TAB ========== -->
+        <div x-show="activeTab==='cost'" x-cloak class="tab-content space-y-5">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-bold text-forest-100">Cost Estimation</h2>
+            <button
+              @click="fetchCost()"
+              class="btn btn-ghost text-[11px] py-1.5"
+            >
+              Refresh
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 anim">
+            <div class="card p-5">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold mb-2"
+              >
+                Total Cost
+              </div>
+              <div class="text-3xl font-bold text-accent-warning">
+                $<span x-text="(costData.totalCost||0).toFixed(4)"></span>
+              </div>
+              <div class="text-[10px] text-forest-400/40 mt-1">
+                All time estimated cost
+              </div>
+            </div>
+            <div class="card p-5">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold mb-2"
+              >
+                Today's Cost
+              </div>
+              <div class="text-3xl font-bold text-accent-success">
+                $<span x-text="(costData.todayCost||0).toFixed(4)"></span>
+              </div>
+              <div class="text-[10px] text-forest-400/40 mt-1">
+                Since midnight UTC
+              </div>
+            </div>
+            <div class="card p-5">
+              <div
+                class="text-[10px] text-forest-400/60 uppercase tracking-[.08em] font-semibold mb-2"
+              >
+                Avg Daily Cost
+              </div>
+              <div class="text-3xl font-bold text-accent-info">
+                $<span x-text="(costData.avgDailyCost||0).toFixed(4)"></span>
+              </div>
+              <div class="text-[10px] text-forest-400/40 mt-1">
+                Based on history
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="card p-5 anim s1">
+              <h3
+                class="text-sm font-semibold text-forest-200 mb-4 flex items-center gap-2"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path
+                    d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"
+                  />
+                </svg>
+                Cost by Model
+              </h3>
+              <div class="space-y-3">
+                <template
+                  x-for="[model, cost] in Object.entries(costData.costByModel||{})"
+                  :key="model"
+                >
+                  <div
+                    class="flex items-center justify-between py-2 border-b border-forest-600/10"
+                  >
+                    <span
+                      class="font-mono text-[12px] text-forest-300 truncate max-w-[250px]"
+                      x-text="model"
+                    ></span>
+                    <span
+                      class="font-mono text-[13px] font-bold text-accent-warning"
+                      x-text="'$'+cost.toFixed(6)"
+                    ></span>
+                  </div>
+                </template>
+                <div
+                  x-show="!Object.keys(costData.costByModel||{}).length"
+                  class="text-center text-forest-400/40 text-[12px] py-6"
+                >
+                  No cost data yet
+                </div>
+              </div>
+            </div>
+
+            <div class="card p-5 anim s2">
+              <h3
+                class="text-sm font-semibold text-forest-200 mb-4 flex items-center gap-2"
+              >
+                <svg
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -612,243 +1712,157 @@
                     d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
                   />
                 </svg>
-                <div class="text-sm">No API keys added yet</div>
-                <button
-                  @click="showAddModal = true"
-                  class="btn btn-primary mt-3 text-xs"
+                Cost by Account
+              </h3>
+              <div class="space-y-3">
+                <template
+                  x-for="[accId, info] in Object.entries(costData.costByAccount||{})"
+                  :key="accId"
                 >
-                  Add your first key
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Logs Tab -->
-        <div
-          x-show="activeTab === 'logs'"
-          x-cloak
-          class="tab-content space-y-4"
-        >
-          <div class="flex items-center justify-between mb-4">
-            <h2
-              class="text-lg font-bold text-dc-heading flex items-center gap-2"
-            >
-              Logs
-              <span
-                class="status-dot"
-                :class="logsConnected ? 'online' : 'offline'"
-                style="width: 6px; height: 6px"
-              ></span>
-            </h2>
-            <div class="flex items-center gap-2">
-              <select
-                x-model="logsFilter"
-                class="input-field text-xs py-1 px-2 w-auto"
-              >
-                <option value="all">All</option>
-                <option value="info">Info</option>
-                <option value="warn">Warn</option>
-                <option value="error">Error</option>
-                <option value="debug">Debug</option>
-              </select>
-              <button
-                @click="logsPaused = !logsPaused"
-                class="btn btn-ghost text-[11px] py-1"
-                :class="logsPaused && 'bg-dc-yellow/20 text-dc-yellow border-dc-yellow/30'"
-              >
-                <span x-text="logsPaused ? 'Resume' : 'Pause'"></span>
-              </button>
-              <button @click="logs = []" class="btn btn-ghost text-[11px] py-1">
-                Clear
-              </button>
-            </div>
-          </div>
-
-          <div class="card overflow-hidden">
-            <div
-              x-ref="logsContainer"
-              class="h-[calc(100vh-220px)] md:h-[calc(100vh-180px)] overflow-y-auto p-3 font-mono"
-            >
-              <template
-                x-for="log in filteredLogs"
-                :key="log.id || log.timestamp"
-              >
-                <div class="log-line flex gap-3 items-start">
-                  <span
-                    class="text-dc-muted whitespace-nowrap text-[11px] opacity-60"
-                    x-text="new Date(log.timestamp).toLocaleTimeString()"
-                  ></span>
-                  <span
-                    class="text-[11px] font-semibold uppercase w-12 shrink-0"
-                    :class="{
-                    'text-dc-cyan': log.level === 'info',
-                    'text-dc-yellow': log.level === 'warn',
-                    'text-dc-red': log.level === 'error',
-                    'text-dc-muted': log.level === 'debug'
-                  }"
-                    x-text="log.level"
-                  ></span>
-                  <span
-                    class="text-[12px] text-dc-text break-all"
-                    x-text="log.message"
-                  ></span>
-                </div>
-              </template>
-              <div
-                x-show="filteredLogs.length === 0"
-                class="text-center text-dc-muted py-8 text-sm"
-              >
-                <span
-                  x-text="logsConnected ? 'Waiting for logs...' : 'Connecting...'"
-                ></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- History Tab -->
-        <div
-          x-show="activeTab === 'history'"
-          x-cloak
-          class="tab-content space-y-4"
-        >
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-dc-heading">History</h2>
-            <div class="flex items-center gap-2">
-              <select
-                x-model="historyFilter.status"
-                @change="fetchHistory()"
-                class="input-field text-xs py-1 px-2 w-auto"
-              >
-                <option value="">All Status</option>
-                <option value="success">Success</option>
-                <option value="error">Error</option>
-              </select>
-              <button
-                @click="clearHistory()"
-                class="btn btn-ghost text-[11px] py-1"
-              >
-                Clear
-              </button>
-            </div>
-          </div>
-
-          <!-- History Stats -->
-          <div
-            class="grid grid-cols-2 md:grid-cols-4 gap-3"
-            x-show="historyStats.totalRequests > 0"
-          >
-            <div class="card p-3">
-              <div class="text-[11px] text-dc-muted uppercase">Total</div>
-              <div
-                class="text-lg font-bold text-dc-heading"
-                x-text="historyStats.totalRequests || 0"
-              ></div>
-            </div>
-            <div class="card p-3">
-              <div class="text-[11px] text-dc-muted uppercase">Avg Time</div>
-              <div
-                class="text-lg font-bold text-dc-cyan"
-                x-text="(historyStats.avgResponseTime || 0) + 'ms'"
-              ></div>
-            </div>
-            <div class="card p-3">
-              <div class="text-[11px] text-dc-muted uppercase">Success</div>
-              <div
-                class="text-lg font-bold text-dc-green"
-                x-text="historyStats.byStatus?.success || 0"
-              ></div>
-            </div>
-            <div class="card p-3">
-              <div class="text-[11px] text-dc-muted uppercase">Errors</div>
-              <div
-                class="text-lg font-bold text-dc-red"
-                x-text="historyStats.byStatus?.error || 0"
-              ></div>
-            </div>
-          </div>
-
-          <div class="card overflow-hidden">
-            <div
-              class="overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto"
-            >
-              <table class="w-full text-xs font-mono">
-                <thead
-                  class="sticky top-0 bg-dc-surface border-b border-dc-border"
-                >
-                  <tr
-                    class="text-[10px] text-dc-muted uppercase tracking-wider"
+                  <div
+                    class="flex items-center justify-between py-2 border-b border-forest-600/10"
                   >
-                    <th class="text-left p-2.5">Time</th>
-                    <th class="text-left p-2.5">Account</th>
-                    <th class="text-left p-2.5 hidden sm:table-cell">Model</th>
-                    <th class="text-left p-2.5 hidden md:table-cell">
-                      Endpoint
+                    <span
+                      class="text-[12px] text-forest-300"
+                      x-text="info.name"
+                    ></span>
+                    <span
+                      class="font-mono text-[13px] font-bold text-accent-warning"
+                      x-text="'$'+info.cost.toFixed(6)"
+                    ></span>
+                  </div>
+                </template>
+                <div
+                  x-show="!Object.keys(costData.costByAccount||{}).length"
+                  class="text-center text-forest-400/40 text-[12px] py-6"
+                >
+                  No account cost data
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card p-5 anim s3">
+            <h3
+              class="text-sm font-semibold text-forest-200 mb-4 flex items-center gap-2"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Daily Cost History
+            </h3>
+            <div style="height: 220px" class="relative">
+              <canvas id="costDailyChart"></canvas>
+            </div>
+            <div
+              x-show="!(costData.dailyHistory||[]).length"
+              class="text-center text-forest-400/40 text-[12px] py-6 absolute inset-0 flex items-center justify-center"
+            >
+              No daily history yet
+            </div>
+          </div>
+
+          <div class="card p-5 anim s4">
+            <h3
+              class="text-sm font-semibold text-forest-200 mb-4 flex items-center gap-2"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              Pricing Reference
+            </h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-[11px]">
+                <thead>
+                  <tr class="border-b border-forest-600/20">
+                    <th class="text-left py-2 text-forest-400/60 font-semibold">
+                      Model
                     </th>
-                    <th class="text-right p-2.5">Status</th>
-                    <th class="text-right p-2.5 hidden sm:table-cell">Time</th>
+                    <th
+                      class="text-right py-2 text-forest-400/60 font-semibold"
+                    >
+                      Input/1M
+                    </th>
+                    <th
+                      class="text-right py-2 text-forest-400/60 font-semibold"
+                    >
+                      Output/1M
+                    </th>
+                    <th
+                      class="text-right py-2 text-forest-400/60 font-semibold"
+                    >
+                      Cache Read/1M
+                    </th>
+                    <th
+                      class="text-right py-2 text-forest-400/60 font-semibold"
+                    >
+                      Cache Write/1M
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  <template x-for="entry in historyEntries" :key="entry.id">
-                    <tr
-                      class="border-b border-dc-border/30 hover:bg-dc-hover/20"
-                    >
+                  <template x-for="p in (costData.pricing||[])" :key="p.model">
+                    <tr class="border-b border-forest-600/10">
                       <td
-                        class="p-2.5 text-dc-muted"
-                        x-text="new Date(entry.timestamp).toLocaleTimeString()"
+                        class="py-2 font-mono text-forest-300"
+                        x-text="p.model"
                       ></td>
                       <td
-                        class="p-2.5 text-dc-text"
-                        x-text="entry.accountName || entry.accountId?.slice(0,8)"
+                        class="py-2 text-right font-mono text-forest-200"
+                        x-text="'$'+p.inputPerMillion.toFixed(2)"
                       ></td>
                       <td
-                        class="p-2.5 hidden sm:table-cell text-dc-muted"
-                        x-text="entry.model || '-'"
+                        class="py-2 text-right font-mono text-forest-200"
+                        x-text="'$'+p.outputPerMillion.toFixed(2)"
                       ></td>
                       <td
-                        class="p-2.5 hidden md:table-cell text-dc-muted"
-                        x-text="entry.method + ' ' + entry.path"
+                        class="py-2 text-right font-mono text-forest-400/70"
+                        x-text="'$'+p.cacheReadPerMillion.toFixed(2)"
                       ></td>
                       <td
-                        class="p-2.5 text-right"
-                        :class="entry.statusCode < 300 ? 'text-dc-green' : entry.statusCode < 500 ? 'text-dc-yellow' : 'text-dc-red'"
-                        x-text="entry.statusCode"
-                      ></td>
-                      <td
-                        class="p-2.5 text-right hidden sm:table-cell text-dc-muted"
-                        x-text="entry.responseTime + 'ms'"
+                        class="py-2 text-right font-mono text-forest-400/70"
+                        x-text="'$'+p.cacheWritePerMillion.toFixed(2)"
                       ></td>
                     </tr>
                   </template>
                 </tbody>
               </table>
-              <div
-                x-show="historyEntries.length === 0"
-                class="p-8 text-center text-dc-muted text-sm"
-              >
-                No request history yet
-              </div>
             </div>
           </div>
         </div>
 
-        <!-- Settings Tab -->
+        <!-- ========== SETTINGS TAB ========== -->
         <div
-          x-show="activeTab === 'settings'"
+          x-show="activeTab==='settings'"
           x-cloak
-          class="tab-content space-y-4"
+          class="tab-content space-y-5"
         >
-          <h2 class="text-lg font-bold text-dc-heading mb-4">Settings</h2>
-
-          <div class="card p-5 space-y-5">
+          <h2 class="text-lg font-bold text-forest-100">Settings</h2>
+          <div class="card p-6 space-y-5">
             <div>
               <label
-                class="text-[11px] text-dc-muted uppercase tracking-wider block mb-1.5"
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1.5"
                 >Pool Strategy</label
-              >
-              <select x-model="settingsForm.strategy" class="input-field">
+              ><select x-model="settingsForm.strategy" class="input-f">
                 <option value="round-robin">Round Robin</option>
                 <option value="weighted">Weighted Round Robin</option>
                 <option value="least-used">Least Used</option>
@@ -859,36 +1873,33 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label
-                  class="text-[11px] text-dc-muted uppercase tracking-wider block mb-1.5"
+                  class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1.5"
                   >Max Retries</label
-                >
-                <input
+                ><input
                   x-model.number="settingsForm.maxRetries"
                   type="number"
                   min="0"
                   max="10"
-                  class="input-field"
+                  class="input-f"
                 />
               </div>
               <div>
                 <label
-                  class="text-[11px] text-dc-muted uppercase tracking-wider block mb-1.5"
+                  class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1.5"
                   >Rate Limit Cooldown (ms)</label
-                >
-                <input
+                ><input
                   x-model.number="settingsForm.rateLimitCooldown"
                   type="number"
                   min="1000"
-                  class="input-field"
+                  class="input-f"
                 />
               </div>
             </div>
             <div>
               <label
-                class="text-[11px] text-dc-muted uppercase tracking-wider block mb-1.5"
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1.5"
                 >Log Level</label
-              >
-              <select x-model="settingsForm.logLevel" class="input-field">
+              ><select x-model="settingsForm.logLevel" class="input-f">
                 <option value="debug">Debug</option>
                 <option value="info">Info</option>
                 <option value="warn">Warning</option>
@@ -896,41 +1907,46 @@
               </select>
             </div>
             <div class="flex justify-end">
-              <button @click="saveSettings()" class="btn btn-primary">
+              <button @click="saveSettings()" class="btn btn-brand">
                 Save Settings
               </button>
             </div>
           </div>
-
-          <div class="card p-5">
-            <h3 class="text-sm font-semibold text-dc-heading mb-3">
+          <div class="card p-6">
+            <h3 class="text-sm font-semibold text-forest-200 mb-4">
               Server Info
             </h3>
-            <div class="space-y-2 text-sm">
-              <div class="flex justify-between">
-                <span class="text-dc-muted">Version</span
+            <div class="space-y-3 text-sm">
+              <div
+                class="flex justify-between border-b border-forest-600/10 pb-2"
+              >
+                <span class="text-forest-400/50">Version</span
                 ><span
-                  class="font-mono text-dc-text"
+                  class="font-mono text-forest-200"
                   x-text="serverVersion"
                 ></span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-dc-muted">Uptime</span
+              <div
+                class="flex justify-between border-b border-forest-600/10 pb-2"
+              >
+                <span class="text-forest-400/50">Uptime</span
                 ><span
-                  class="font-mono text-dc-text"
+                  class="font-mono text-forest-200"
                   x-text="formatUptime(serverUptime)"
                 ></span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-dc-muted">Strategy</span
+              <div
+                class="flex justify-between border-b border-forest-600/10 pb-2"
+              >
+                <span class="text-forest-400/50">Strategy</span
                 ><span
-                  class="font-mono text-dc-text"
+                  class="font-mono text-forest-200"
                   x-text="settingsForm.strategy"
                 ></span>
               </div>
               <div class="flex justify-between">
-                <span class="text-dc-muted">Claude API</span
-                ><span class="font-mono text-dc-text text-[11px]"
+                <span class="text-forest-400/50">Claude API</span
+                ><span class="font-mono text-forest-300 text-[11px]"
                   >api.anthropic.com</span
                 >
               </div>
@@ -938,69 +1954,60 @@
           </div>
         </div>
 
-        <!-- Notifications Tab -->
+        <!-- ========== NOTIFICATIONS TAB ========== -->
         <div
-          x-show="activeTab === 'notifications'"
+          x-show="activeTab==='notifications'"
           x-cloak
           class="tab-content space-y-4"
         >
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="text-lg font-bold text-dc-heading">Notifications</h2>
-            <div class="flex items-center gap-2">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-lg font-bold text-forest-100">Notifications</h2>
+            <div class="flex gap-2" x-show="notifications.length>0">
               <button
-                x-show="notifications.length > 0"
                 @click="markAllNotificationsRead()"
-                class="btn btn-ghost text-[11px] py-1"
+                class="btn btn-ghost text-[11px]"
               >
-                Mark All Read
-              </button>
-              <button
-                x-show="notifications.length > 0"
+                Mark All Read</button
+              ><button
                 @click="clearNotifications()"
-                class="btn btn-ghost text-[11px] py-1"
+                class="btn btn-ghost text-[11px]"
               >
                 Clear
               </button>
             </div>
           </div>
-
           <div class="space-y-2">
             <template x-for="n in notifications" :key="n.id">
               <div
-                class="card p-3 flex items-start gap-3 transition-all"
-                :class="!n.read && 'border-l-2 border-l-dc-brand'"
+                class="card p-4 flex items-start gap-3"
+                :class="!n.read&&'border-l-[3px] border-l-forest-500'"
               >
                 <div
-                  class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                  :class="{
-                  'bg-dc-red/15 text-dc-red': n.type === 'error',
-                  'bg-dc-yellow/15 text-dc-yellow': n.type === 'warning',
-                  'bg-dc-green/15 text-dc-green': n.type === 'success',
-                  'bg-dc-cyan/15 text-dc-cyan': n.type === 'info'
-                }"
+                  class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                  :class="{'bg-accent-error/10 text-accent-error':n.type==='error','bg-accent-warning/10 text-accent-warning':n.type==='warning','bg-accent-success/10 text-accent-success':n.type==='success','bg-accent-info/10 text-accent-info':n.type==='info'}"
                 >
                   <svg
-                    width="14"
-                    height="14"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2"
                   >
-                    <template x-if="n.type === 'error'">
+                    <template x-if="n.type==='error'">
                       <path
                         d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
                     </template>
-                    <template x-if="n.type === 'warning'">
+                    <template x-if="n.type==='warning'">
                       <path
                         d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                       />
                     </template>
-                    <template x-if="n.type === 'success'">
+                    <template x-if="n.type==='success'">
                       <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </template>
-                    <template x-if="n.type === 'info'">
+                    <template x-if="n.type==='info'">
                       <path
                         d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
@@ -1009,21 +2016,21 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div
-                    class="text-sm font-medium text-dc-heading"
+                    class="text-sm font-semibold text-forest-100"
                     x-text="n.title"
                   ></div>
                   <div
-                    class="text-xs text-dc-muted mt-0.5"
+                    class="text-xs text-forest-400/60 mt-0.5"
                     x-text="n.message"
                   ></div>
                   <div
-                    class="text-[10px] text-dc-muted mt-1 opacity-60"
+                    class="text-[10px] text-forest-400/30 mt-1.5"
                     x-text="timeAgo(n.timestamp)"
                   ></div>
                 </div>
                 <button
                   @click="deleteNotification(n.id)"
-                  class="text-dc-muted hover:text-dc-red transition-colors p-1"
+                  class="text-forest-400/30 hover:text-accent-error transition-colors p-1"
                 >
                   <svg
                     width="12"
@@ -1039,8 +2046,8 @@
               </div>
             </template>
             <div
-              x-show="notifications.length === 0"
-              class="card p-12 text-center text-dc-muted text-sm"
+              x-show="notifications.length===0"
+              class="card p-16 text-center text-forest-400/30 text-sm"
             >
               No notifications
             </div>
@@ -1053,84 +2060,81 @@
     <div
       x-show="showAddModal"
       x-cloak
-      class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-      @click.self="showAddModal = false"
-      @keydown.escape.window="showAddModal = false"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      @click.self="showAddModal=false"
+      @keydown.escape.window="showAddModal=false"
     >
-      <div class="card p-5 w-full max-w-md animate-in" @click.stop>
-        <h3 class="text-base font-bold text-dc-heading mb-4">Add API Key</h3>
+      <div
+        class="card p-6 w-full max-w-md anim"
+        @click.stop
+        style="background: #0f1e1b"
+      >
+        <h3 class="text-base font-bold text-forest-100 mb-5">Add API Key</h3>
         <div class="space-y-3">
           <div>
             <label
-              class="text-[11px] text-dc-muted uppercase tracking-wider block mb-1"
+              class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1"
               >Name</label
-            >
-            <input
+            ><input
               x-model="newAccount.name"
               type="text"
-              class="input-field"
+              class="input-f"
               placeholder="e.g. production-key"
             />
           </div>
           <div>
             <label
-              class="text-[11px] text-dc-muted uppercase tracking-wider block mb-1"
+              class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1"
               >API Key</label
-            >
-            <input
+            ><input
               x-model="newAccount.apiKey"
               type="password"
-              class="input-field font-mono text-xs"
+              class="input-f font-mono text-xs"
               placeholder="sk-ant-api03-..."
             />
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label
-                class="text-[11px] text-dc-muted uppercase tracking-wider block mb-1"
-                >Priority (1-100)</label
-              >
-              <input
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1"
+                >Priority</label
+              ><input
                 x-model.number="newAccount.priority"
                 type="number"
                 min="1"
                 max="100"
-                class="input-field"
+                class="input-f"
               />
             </div>
             <div>
               <label
-                class="text-[11px] text-dc-muted uppercase tracking-wider block mb-1"
+                class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1"
                 >Weight</label
-              >
-              <input
+              ><input
                 x-model.number="newAccount.weight"
                 type="number"
                 min="1"
                 max="10"
-                class="input-field"
+                class="input-f"
               />
             </div>
           </div>
         </div>
         <div
           x-show="addError"
-          class="mt-3 text-xs text-dc-red"
+          class="mt-3 text-xs text-accent-error"
           x-text="addError"
         ></div>
-        <div class="flex justify-end gap-2 mt-5">
-          <button @click="showAddModal = false" class="btn btn-ghost">
-            Cancel
-          </button>
-          <button
+        <div class="flex justify-end gap-2 mt-6">
+          <button @click="showAddModal=false" class="btn btn-ghost">
+            Cancel</button
+          ><button
             @click="addAccount()"
             :disabled="addLoading"
-            class="btn btn-primary"
-            :class="addLoading && 'opacity-50'"
-          >
-            <span x-show="!addLoading">Add Key</span>
-            <span x-show="addLoading">Adding...</span>
-          </button>
+            class="btn btn-brand"
+            :class="addLoading&&'opacity-50'"
+            x-text="addLoading?'Adding...':'Add Key'"
+          ></button>
         </div>
       </div>
     </div>
@@ -1139,21 +2143,23 @@
     <div
       x-show="confirmModal.show"
       x-cloak
-      class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
-      @keydown.escape.window="confirmModal.show = false"
+      class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      @keydown.escape.window="confirmModal.show=false"
     >
-      <div class="card p-5 w-full max-w-sm animate-in">
+      <div class="card p-6 w-full max-w-sm anim" style="background: #0f1e1b">
         <h3
-          class="text-base font-bold text-dc-heading"
+          class="text-base font-bold text-forest-100"
           x-text="confirmModal.title"
         ></h3>
-        <p class="text-sm text-dc-muted mt-2" x-text="confirmModal.message"></p>
-        <div class="flex justify-end gap-2 mt-5">
-          <button @click="confirmModal.show = false" class="btn btn-ghost">
-            Cancel
-          </button>
-          <button
-            @click="confirmModal.onConfirm(); confirmModal.show = false"
+        <p
+          class="text-sm text-forest-400/70 mt-2"
+          x-text="confirmModal.message"
+        ></p>
+        <div class="flex justify-end gap-2 mt-6">
+          <button @click="confirmModal.show=false" class="btn btn-ghost">
+            Cancel</button
+          ><button
+            @click="confirmModal.onConfirm();confirmModal.show=false"
             class="btn btn-danger"
           >
             Delete
@@ -1166,18 +2172,13 @@
     <div
       x-show="toast.show"
       x-cloak
-      class="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 toast-enter"
+      class="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 toast-pop"
     >
       <div
-        class="card px-4 py-3 flex items-center gap-3 shadow-xl max-w-sm"
-        :class="{
-        'border-l-2 border-l-dc-green': toast.type === 'success',
-        'border-l-2 border-l-dc-red': toast.type === 'error',
-        'border-l-2 border-l-dc-yellow': toast.type === 'warning',
-        'border-l-2 border-l-dc-cyan': toast.type === 'info'
-      }"
+        class="card px-4 py-3 flex items-center gap-3 shadow-2xl max-w-sm"
+        :class="{'border-l-[3px] border-l-accent-success':toast.type==='success','border-l-[3px] border-l-accent-error':toast.type==='error','border-l-[3px] border-l-accent-warning':toast.type==='warning','border-l-[3px] border-l-accent-info':toast.type==='info'}"
       >
-        <span class="text-sm" x-text="toast.message"></span>
+        <span class="text-sm text-forest-200" x-text="toast.message"></span>
       </div>
     </div>
 
@@ -1191,15 +2192,24 @@
           logsFilter: "all",
           logsPaused: false,
           logsConnected: false,
+          logsAutoScroll: true,
+          logsSearch: "",
           logsEventSource: null,
+          logStats: { total: 0, errors: 0 },
           historyEntries: [],
           historyStats: {},
           historyFilter: { status: "" },
+          historyPage: 1,
+          usageData: {},
+          costData: {},
+          usageHourlyChart: null,
+          costDailyChart: null,
           notifications: [],
           unreadCount: 0,
           serverUptime: 0,
-          serverVersion: "1.0.0",
+          serverVersion: "1.1.0",
           poolStatus: "loading",
+          lastUpdate: "-",
           showAddModal: false,
           addLoading: false,
           addError: "",
@@ -1219,40 +2229,49 @@
           },
           refreshTimer: null,
           reqChart: null,
-
           navItems: [
             {
               id: "dashboard",
               label: "Dashboard",
-              icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>',
+              icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>',
             },
             {
               id: "accounts",
               label: "Accounts",
-              icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>',
+              icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>',
             },
             {
               id: "logs",
               label: "Logs",
-              icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
+              icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
             },
             {
               id: "history",
               label: "History",
-              icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+              icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+            },
+            {
+              id: "usage",
+              label: "Usage",
+              icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>',
+            },
+            {
+              id: "cost",
+              label: "Cost",
+              icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>',
             },
             {
               id: "settings",
               label: "Settings",
-              icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>',
+              icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>',
             },
             {
               id: "notifications",
               label: "Notifications",
-              icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>',
+              icon: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>',
             },
           ],
-          mobileNavItems: [
+          mobileNav: [
             {
               id: "dashboard",
               label: "Home",
@@ -1274,53 +2293,59 @@
               icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573-1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/></svg>',
             },
           ],
-
-          get dashboardStats() {
+          get dashStats() {
             return [
               {
                 label: "Total Keys",
                 value: this.stats.total || 0,
-                color: "text-dc-heading",
+                color: "text-forest-100",
               },
               {
                 label: "Active",
                 value: this.stats.active || 0,
-                color: "text-dc-green",
+                color: "text-accent-success",
               },
               {
                 label: "Rate Limited",
                 value: this.stats.rateLimited || 0,
-                color: "text-dc-yellow",
+                color: "text-accent-warning",
               },
               {
                 label: "Invalid",
                 value: this.stats.invalid || 0,
-                color: "text-dc-red",
+                color: "text-accent-error",
               },
               {
                 label: "Disabled",
                 value: this.stats.disabled || 0,
-                color: "text-dc-muted",
+                color: "text-forest-400/40",
               },
               {
                 label: "Req/Min",
                 value: this.stats.requests?.perMinute || 0,
-                color: "text-dc-cyan",
+                color: "text-accent-cyan",
               },
             ];
           },
-
           get successRate() {
             const r = this.stats.requests;
             if (!r || r.total === 0) return 0;
             return Math.round((r.success / r.total) * 100);
           },
-
           get filteredLogs() {
-            if (this.logsFilter === "all") return this.logs;
-            return this.logs.filter((l) => l.level === this.logsFilter);
+            let l = this.logs;
+            if (this.logsFilter !== "all")
+              l = l.filter((x) => x.level === this.logsFilter);
+            if (this.logsSearch) {
+              const q = this.logsSearch.toLowerCase();
+              l = l.filter(
+                (x) =>
+                  (x.message || "").toLowerCase().includes(q) ||
+                  x.level.includes(q),
+              );
+            }
+            return l;
           },
-
           async init() {
             await this.refreshAll();
             this.connectLogStream();
@@ -1329,28 +2354,29 @@
             this.fetchHistoryStats();
             this.fetchConfig();
             this.refreshTimer = setInterval(() => this.refreshAll(), 15000);
-            this.$watch("activeTab", (tab) => {
-              if (tab === "history") {
+            this.$watch("activeTab", (t) => {
+              if (t === "history") {
                 this.fetchHistory();
                 this.fetchHistoryStats();
               }
-              if (tab === "notifications") this.fetchNotifications();
+              if (t === "usage") this.fetchUsage();
+              if (t === "cost") this.fetchCost();
+              if (t === "notifications") this.fetchNotifications();
             });
           },
-
           async refreshAll() {
             try {
-              const [statsRes, accountsRes, statusRes] = await Promise.all([
+              const [sr, ar, str] = await Promise.all([
                 fetch("/api/dashboard/stats"),
                 fetch("/api/dashboard/accounts"),
                 fetch("/api/dashboard/status"),
               ]);
-              this.stats = await statsRes.json();
-              const accData = await accountsRes.json();
-              this.accounts = accData.accounts || [];
-              const statusData = await statusRes.json();
-              this.serverUptime = statusData.uptime || 0;
-              this.serverVersion = statusData.version || "1.0.0";
+              this.stats = await sr.json();
+              const ad = await ar.json();
+              this.accounts = ad.accounts || [];
+              const sd = await str.json();
+              this.serverUptime = sd.uptime || 0;
+              this.serverVersion = sd.version || "1.1.0";
               this.poolStatus =
                 (this.stats.active || 0) > 0
                   ? "healthy"
@@ -1359,12 +2385,14 @@
                     : this.stats.total > 0
                       ? "down"
                       : "empty";
+              this.lastUpdate = new Date().toLocaleTimeString("en-GB", {
+                hour12: false,
+              });
               this.updateChart();
             } catch (e) {
               this.poolStatus = "error";
             }
           },
-
           connectLogStream() {
             if (this.logsEventSource) this.logsEventSource.close();
             const es = new EventSource("/api/dashboard/logs/stream");
@@ -1376,10 +2404,14 @@
               if (this.logsPaused) return;
               try {
                 const log = JSON.parse(e.data);
-                log.id =
-                  Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+                log._id =
+                  Date.now() + "-" + Math.random().toString(36).slice(2, 7);
                 this.logs.unshift(log);
                 if (this.logs.length > 500) this.logs.length = 500;
+                this.logStats.total++;
+                if (log.level === "error") this.logStats.errors++;
+                if (this.logsAutoScroll && this.$refs.logsContainer)
+                  this.$refs.logsContainer.scrollTop = 0;
               } catch {}
             });
             es.onerror = () => {
@@ -1388,41 +2420,39 @@
               setTimeout(() => this.connectLogStream(), 5000);
             };
           },
-
           async fetchHistory() {
             try {
-              const params = new URLSearchParams({ limit: "100" });
+              const p = new URLSearchParams({
+                limit: "50",
+                offset: String((this.historyPage - 1) * 50),
+              });
               if (this.historyFilter.status)
-                params.set("status", this.historyFilter.status);
-              const res = await fetch("/api/dashboard/history?" + params);
-              const data = await res.json();
-              this.historyEntries = data.entries || [];
+                p.set("status", this.historyFilter.status);
+              const r = await fetch("/api/dashboard/history?" + p);
+              const d = await r.json();
+              this.historyEntries = d.entries || [];
             } catch {}
           },
-
           async fetchHistoryStats() {
             try {
-              const res = await fetch("/api/dashboard/history/stats");
-              this.historyStats = await res.json();
+              const r = await fetch("/api/dashboard/history/stats");
+              this.historyStats = await r.json();
             } catch {}
           },
-
           async clearHistory() {
             await fetch("/api/dashboard/history", { method: "DELETE" });
             this.historyEntries = [];
             this.historyStats = {};
             this.showToast("History cleared", "success");
           },
-
           async fetchNotifications() {
             try {
-              const res = await fetch("/api/dashboard/notifications");
-              const data = await res.json();
-              this.notifications = data.notifications || [];
-              this.unreadCount = data.unreadCount || 0;
+              const r = await fetch("/api/dashboard/notifications");
+              const d = await r.json();
+              this.notifications = d.notifications || [];
+              this.unreadCount = d.unreadCount || 0;
             } catch {}
           },
-
           async markAllNotificationsRead() {
             await fetch("/api/dashboard/notifications/read-all", {
               method: "POST",
@@ -1430,7 +2460,6 @@
             this.notifications.forEach((n) => (n.read = true));
             this.unreadCount = 0;
           },
-
           async deleteNotification(id) {
             await fetch("/api/dashboard/notifications/" + id, {
               method: "DELETE",
@@ -1438,28 +2467,25 @@
             this.notifications = this.notifications.filter((n) => n.id !== id);
             this.unreadCount = this.notifications.filter((n) => !n.read).length;
           },
-
           async clearNotifications() {
             await fetch("/api/dashboard/notifications", { method: "DELETE" });
             this.notifications = [];
             this.unreadCount = 0;
             this.showToast("Notifications cleared", "success");
           },
-
           async fetchConfig() {
             try {
-              const res = await fetch("/api/dashboard/config");
-              const data = await res.json();
-              if (data.config) {
-                this.settingsForm.strategy = data.config.strategy;
-                this.settingsForm.maxRetries = data.config.maxRetries;
+              const r = await fetch("/api/dashboard/config");
+              const d = await r.json();
+              if (d.config) {
+                this.settingsForm.strategy = d.config.strategy;
+                this.settingsForm.maxRetries = d.config.maxRetries;
                 this.settingsForm.rateLimitCooldown =
-                  data.config.rateLimitCooldown;
-                this.settingsForm.logLevel = data.config.logLevel;
+                  d.config.rateLimitCooldown;
+                this.settingsForm.logLevel = d.config.logLevel;
               }
             } catch {}
           },
-
           async saveSettings() {
             try {
               await fetch("/api/dashboard/config", {
@@ -1469,25 +2495,24 @@
               });
               this.showToast("Settings saved", "success");
             } catch {
-              this.showToast("Failed to save settings", "error");
+              this.showToast("Failed to save", "error");
             }
           },
-
           async addAccount() {
             this.addError = "";
             if (!this.newAccount.name || !this.newAccount.apiKey) {
-              this.addError = "Name and API key are required";
+              this.addError = "Name and API key required";
               return;
             }
             this.addLoading = true;
             try {
-              const res = await fetch("/api/dashboard/accounts", {
+              const r = await fetch("/api/dashboard/accounts", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(this.newAccount),
               });
-              const data = await res.json();
-              if (!res.ok) throw new Error(data.error || "Failed");
+              const d = await r.json();
+              if (!r.ok) throw new Error(d.error || "Failed");
               this.showAddModal = false;
               this.newAccount = {
                 name: "",
@@ -1503,32 +2528,30 @@
               this.addLoading = false;
             }
           },
-
-          confirmDelete(account) {
+          confirmDelete(acc) {
             this.confirmModal = {
               show: true,
               title: "Delete Account",
-              message: `Delete "${account.name}"? This cannot be undone.`,
+              message: `Delete "${acc.name}"? This cannot be undone.`,
               onConfirm: async () => {
                 await this.apiCall(
-                  "/api/dashboard/accounts/" + account.id,
+                  "/api/dashboard/accounts/" + acc.id,
                   "DELETE",
                 );
               },
             };
           },
-
           async apiCall(url, method = "GET", body = null) {
             try {
-              const opts = { method, headers: {} };
+              const o = { method, headers: {} };
               if (body) {
-                opts.headers["Content-Type"] = "application/json";
-                opts.body = JSON.stringify(body);
+                o.headers["Content-Type"] = "application/json";
+                o.body = JSON.stringify(body);
               }
-              const res = await fetch(url, opts);
-              if (!res.ok) {
-                const d = await res.json();
-                throw new Error(d.error || "Request failed");
+              const r = await fetch(url, o);
+              if (!r.ok) {
+                const d = await r.json();
+                throw new Error(d.error || "Failed");
               }
               this.showToast("Success", "success");
               await this.refreshAll();
@@ -1536,37 +2559,35 @@
               this.showToast(e.message, "error");
             }
           },
-
-          showToast(message, type = "info") {
-            this.toast = { show: true, message, type };
+          showToast(msg, type = "info") {
+            this.toast = { show: true, message: msg, type };
             setTimeout(() => {
               this.toast.show = false;
             }, 3000);
           },
-
           updateChart() {
-            const canvas = document.getElementById("reqChart");
-            if (!canvas) return;
-            const ctx = canvas.getContext("2d");
-            const accs = this.accounts.filter((a) => a.usage.total > 0);
-            if (accs.length === 0) {
+            const cv = document.getElementById("reqChart");
+            if (!cv) return;
+            const ctx = cv.getContext("2d");
+            const a = this.accounts.filter((x) => x.usage.total > 0);
+            if (a.length === 0) {
               if (this.reqChart) {
                 this.reqChart.destroy();
                 this.reqChart = null;
               }
               return;
             }
-            const labels = accs.map((a) => a.name);
-            const data = accs.map((a) => a.usage.total);
-            const colors = [
-              "#5865f2",
-              "#23a559",
-              "#00b4d8",
-              "#f0b232",
-              "#da373c",
-              "#9b59b6",
-              "#e67e22",
-            ];
+            const labels = a.map((x) => x.name),
+              data = a.map((x) => x.usage.total),
+              colors = [
+                "#408A71",
+                "#34d399",
+                "#22d3ee",
+                "#fbbf24",
+                "#f87171",
+                "#a78bfa",
+                "#60a5fa",
+              ];
             if (this.reqChart) this.reqChart.destroy();
             this.reqChart = new Chart(ctx, {
               type: "doughnut",
@@ -1577,20 +2598,21 @@
                     data,
                     backgroundColor: colors.slice(0, data.length),
                     borderWidth: 0,
+                    borderRadius: 4,
                   },
                 ],
               },
               options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: "65%",
+                cutout: "68%",
                 plugins: {
                   legend: {
                     position: "right",
                     labels: {
-                      color: "#949ba4",
+                      color: "#7ec4a8",
                       font: { family: '"DM Sans"', size: 11 },
-                      padding: 12,
+                      padding: 14,
                       usePointStyle: true,
                       pointStyle: "circle",
                     },
@@ -1599,7 +2621,163 @@
               },
             });
           },
-
+          async fetchUsage() {
+            try {
+              const r = await fetch("/api/dashboard/usage");
+              this.usageData = await r.json();
+              this.updateUsageChart();
+            } catch {}
+          },
+          async fetchCost() {
+            try {
+              const r = await fetch("/api/dashboard/cost");
+              this.costData = await r.json();
+              this.updateCostChart();
+            } catch {}
+          },
+          updateUsageChart() {
+            const cv = document.getElementById("usageHourlyChart");
+            if (!cv) return;
+            const ctx = cv.getContext("2d");
+            const hourly = this.usageData.hourly || [];
+            if (hourly.length === 0) {
+              if (this.usageHourlyChart) {
+                this.usageHourlyChart.destroy();
+                this.usageHourlyChart = null;
+              }
+              return;
+            }
+            const labels = hourly.map((h) => h.hour.slice(11) + ":00");
+            const inputData = hourly.map((h) => h.inputTokens);
+            const outputData = hourly.map((h) => h.outputTokens);
+            if (this.usageHourlyChart) this.usageHourlyChart.destroy();
+            this.usageHourlyChart = new Chart(ctx, {
+              type: "bar",
+              data: {
+                labels,
+                datasets: [
+                  {
+                    label: "Input Tokens",
+                    data: inputData,
+                    backgroundColor: "rgba(34,211,238,0.5)",
+                    borderColor: "#22d3ee",
+                    borderWidth: 1,
+                    borderRadius: 3,
+                  },
+                  {
+                    label: "Output Tokens",
+                    data: outputData,
+                    backgroundColor: "rgba(167,139,250,0.5)",
+                    borderColor: "#a78bfa",
+                    borderWidth: 1,
+                    borderRadius: 3,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    grid: { color: "rgba(40,90,72,0.15)" },
+                    ticks: {
+                      color: "#7ec4a8",
+                      font: { family: '"DM Sans"', size: 10 },
+                    },
+                  },
+                  y: {
+                    grid: { color: "rgba(40,90,72,0.15)" },
+                    ticks: {
+                      color: "#7ec4a8",
+                      font: { family: '"JetBrains Mono"', size: 10 },
+                    },
+                  },
+                },
+                plugins: {
+                  legend: {
+                    labels: {
+                      color: "#7ec4a8",
+                      font: { family: '"DM Sans"', size: 11 },
+                      usePointStyle: true,
+                      pointStyle: "circle",
+                    },
+                  },
+                },
+              },
+            });
+          },
+          updateCostChart() {
+            const cv = document.getElementById("costDailyChart");
+            if (!cv) return;
+            const ctx = cv.getContext("2d");
+            const history = this.costData.dailyHistory || [];
+            if (history.length === 0) {
+              if (this.costDailyChart) {
+                this.costDailyChart.destroy();
+                this.costDailyChart = null;
+              }
+              return;
+            }
+            const labels = history.map((d) => d.date.slice(5));
+            const data = history.map((d) => d.totalCost);
+            if (this.costDailyChart) this.costDailyChart.destroy();
+            this.costDailyChart = new Chart(ctx, {
+              type: "line",
+              data: {
+                labels,
+                datasets: [
+                  {
+                    label: "Daily Cost ($)",
+                    data,
+                    borderColor: "#fbbf24",
+                    backgroundColor: "rgba(251,191,36,0.1)",
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: "#fbbf24",
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    grid: { color: "rgba(40,90,72,0.15)" },
+                    ticks: {
+                      color: "#7ec4a8",
+                      font: { family: '"DM Sans"', size: 10 },
+                    },
+                  },
+                  y: {
+                    grid: { color: "rgba(40,90,72,0.15)" },
+                    ticks: {
+                      color: "#7ec4a8",
+                      font: { family: '"JetBrains Mono"', size: 10 },
+                      callback: (v) => "$" + v.toFixed(4),
+                    },
+                  },
+                },
+                plugins: {
+                  legend: {
+                    labels: {
+                      color: "#7ec4a8",
+                      font: { family: '"DM Sans"', size: 11 },
+                      usePointStyle: true,
+                      pointStyle: "circle",
+                    },
+                  },
+                },
+              },
+            });
+          },
+          formatTokens(n) {
+            if (!n || n === 0) return "0";
+            if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
+            if (n >= 1000) return (n / 1000).toFixed(1) + "K";
+            return n.toString();
+          },
           formatUptime(s) {
             if (!s) return "0s";
             const d = Math.floor(s / 86400),
@@ -1609,13 +2787,12 @@
             if (h > 0) return h + "h " + m + "m";
             return m + "m " + Math.floor(s % 60) + "s";
           },
-
           timeAgo(ts) {
-            const diff = Date.now() - ts;
-            if (diff < 60000) return "just now";
-            if (diff < 3600000) return Math.floor(diff / 60000) + "m ago";
-            if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago";
-            return Math.floor(diff / 86400000) + "d ago";
+            const d = Date.now() - ts;
+            if (d < 60000) return "just now";
+            if (d < 3600000) return Math.floor(d / 60000) + "m ago";
+            if (d < 86400000) return Math.floor(d / 3600000) + "h ago";
+            return Math.floor(d / 86400000) + "d ago";
           },
         };
       }
