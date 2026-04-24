@@ -58,7 +58,9 @@ export function decrypt(ciphertext: string, encryptionKey: string): string {
   return decrypted;
 }
 
-export function maskApiKey(apiKey: string): string {
-  if (apiKey.length <= 8) return "***";
-  return apiKey.slice(0, 7) + "..." + apiKey.slice(-4);
+export function maskSecret(value: string): string {
+  if (value.length <= 8) return "***";
+  return value.slice(0, 7) + "..." + value.slice(-4);
 }
+
+export const maskApiKey = maskSecret;
