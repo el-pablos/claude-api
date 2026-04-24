@@ -759,38 +759,31 @@
             </div>
             <div class="card p-5">
               <h3 class="text-sm font-semibold text-forest-200 mb-1">
-                Add Account
+                Link Account
               </h3>
-              <p class="text-[12px] text-forest-400/50 mb-4">
-                Add an Anthropic API key to expand pool capacity.
+              <p class="text-[12px] text-forest-400/50 mb-3">
+                Login via Claude OAuth to link your session.
               </p>
-              <div class="space-y-3">
-                <input
-                  x-model="newAccount.name"
-                  class="input-f text-sm"
-                  placeholder="Label (e.g. work, personal)"
-                />
-                <div class="flex gap-2">
-                  <input
-                    x-model="newAccount.apiKey"
-                    type="password"
-                    class="input-f text-sm font-mono flex-1"
-                    placeholder="sk-ant-api03-..."
-                  /><button
-                    @click="addAccount()"
-                    :disabled="addLoading"
-                    class="btn btn-brand whitespace-nowrap"
-                    :class="addLoading&&'opacity-50'"
+              <button
+                @click="showAddModal=true;oauthStep=1;addError=''"
+                class="btn btn-brand w-full"
+              >
+                <span class="flex items-center justify-center gap-2">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
                   >
-                    <span x-text="addLoading?'Adding...':'+ Add Key'"></span>
-                  </button>
-                </div>
-                <div
-                  x-show="addError"
-                  class="text-xs text-accent-error"
-                  x-text="addError"
-                ></div>
-              </div>
+                    <path
+                      d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"
+                    />
+                  </svg>
+                  Login with Claude
+                </span>
+              </button>
             </div>
           </div>
           <!-- Account Cards -->
@@ -834,7 +827,7 @@
                         ></div>
                         <div
                           class="text-[11px] text-forest-400/40 font-mono"
-                          x-text="acc.apiKey"
+                          x-text="acc.oauth?acc.oauth.accessToken:'no token'"
                         ></div>
                       </div>
                     </div>
@@ -2056,7 +2049,7 @@
       </div>
     </main>
 
-    <!-- Add Account Modal -->
+    <!-- Add Account Modal (OAuth Flow) -->
     <div
       x-show="showAddModal"
       x-cloak
@@ -2065,32 +2058,29 @@
       @keydown.escape.window="showAddModal=false"
     >
       <div
-        class="card p-6 w-full max-w-md anim"
+        class="card p-6 w-full max-w-lg anim"
         @click.stop
         style="background: #0f1e1b"
       >
-        <h3 class="text-base font-bold text-forest-100 mb-5">Add API Key</h3>
-        <div class="space-y-3">
+        <h3 class="text-base font-bold text-forest-100 mb-1">
+          Link Claude Account
+        </h3>
+        <p class="text-[11px] text-forest-400/60 mb-5">
+          Login via OAuth to link your Claude session
+        </p>
+
+        <!-- Step 1: Enter name & get auth URL -->
+        <div x-show="oauthStep===1" class="space-y-3">
           <div>
             <label
               class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1"
-              >Name</label
-            ><input
+              >Account Name</label
+            >
+            <input
               x-model="newAccount.name"
               type="text"
               class="input-f"
-              placeholder="e.g. production-key"
-            />
-          </div>
-          <div>
-            <label
-              class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1"
-              >API Key</label
-            ><input
-              x-model="newAccount.apiKey"
-              type="password"
-              class="input-f font-mono text-xs"
-              placeholder="sk-ant-api03-..."
+              placeholder="e.g. akun-utama"
             />
           </div>
           <div class="grid grid-cols-2 gap-3">
@@ -2098,7 +2088,8 @@
               <label
                 class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1"
                 >Priority</label
-              ><input
+              >
+              <input
                 x-model.number="newAccount.priority"
                 type="number"
                 min="1"
@@ -2110,7 +2101,8 @@
               <label
                 class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold block mb-1"
                 >Weight</label
-              ><input
+              >
+              <input
                 x-model.number="newAccount.weight"
                 type="number"
                 min="1"
@@ -2119,22 +2111,95 @@
               />
             </div>
           </div>
+          <div
+            x-show="addError"
+            class="text-xs text-accent-error"
+            x-text="addError"
+          ></div>
+          <div class="flex justify-end gap-2 mt-4">
+            <button
+              @click="showAddModal=false;oauthStep=1"
+              class="btn btn-ghost"
+            >
+              Cancel
+            </button>
+            <button
+              @click="startOAuth()"
+              :disabled="addLoading"
+              class="btn btn-brand"
+              :class="addLoading&&'opacity-50'"
+            >
+              <span
+                x-text="addLoading?'Generating...':'Generate Login URL'"
+              ></span>
+            </button>
+          </div>
         </div>
-        <div
-          x-show="addError"
-          class="mt-3 text-xs text-accent-error"
-          x-text="addError"
-        ></div>
-        <div class="flex justify-end gap-2 mt-6">
-          <button @click="showAddModal=false" class="btn btn-ghost">
-            Cancel</button
-          ><button
-            @click="addAccount()"
-            :disabled="addLoading"
-            class="btn btn-brand"
-            :class="addLoading&&'opacity-50'"
-            x-text="addLoading?'Adding...':'Add Key'"
-          ></button>
+
+        <!-- Step 2: Show auth URL & paste code -->
+        <div x-show="oauthStep===2" class="space-y-4">
+          <div class="card p-4" style="background: #091413">
+            <div
+              class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold mb-2"
+            >
+              Step 1: Open this URL in your browser
+            </div>
+            <div class="flex gap-2">
+              <input
+                readonly
+                :value="oauthUrl"
+                class="input-f font-mono text-[10px] flex-1"
+              />
+              <button
+                @click="navigator.clipboard.writeText(oauthUrl);showToast('URL copied!','success')"
+                class="btn btn-ghost text-[10px] whitespace-nowrap"
+              >
+                Copy
+              </button>
+            </div>
+            <a
+              :href="oauthUrl"
+              target="_blank"
+              class="inline-block mt-2 text-[11px] text-accent-brand hover:text-forest-200 underline"
+              >Open in new tab &rarr;</a
+            >
+          </div>
+
+          <div class="card p-4" style="background: #091413">
+            <div
+              class="text-[10px] text-forest-400/50 uppercase tracking-[.08em] font-semibold mb-2"
+            >
+              Step 2: Paste the authorization code
+            </div>
+            <input
+              x-model="oauthCode"
+              type="text"
+              class="input-f font-mono text-xs"
+              placeholder="Paste the code from browser here..."
+            />
+          </div>
+
+          <div
+            x-show="addError"
+            class="text-xs text-accent-error"
+            x-text="addError"
+          ></div>
+          <div class="flex justify-end gap-2 mt-2">
+            <button
+              @click="oauthStep=1;oauthUrl='';oauthCode='';addError=''"
+              class="btn btn-ghost"
+            >
+              Back
+            </button>
+            <button
+              @click="exchangeOAuth()"
+              :disabled="addLoading"
+              class="btn btn-brand"
+              :class="addLoading&&'opacity-50'"
+            >
+              <span x-text="addLoading?'Linking...':'Link Account'"></span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2213,7 +2278,11 @@
           showAddModal: false,
           addLoading: false,
           addError: "",
-          newAccount: { name: "", apiKey: "", priority: 50, weight: 1 },
+          newAccount: { name: "", priority: 50, weight: 1 },
+          oauthStep: 1,
+          oauthUrl: "",
+          oauthCode: "",
+          oauthState: "",
           confirmModal: {
             show: false,
             title: "",
@@ -2498,29 +2567,58 @@
               this.showToast("Failed to save", "error");
             }
           },
-          async addAccount() {
+          async startOAuth() {
             this.addError = "";
-            if (!this.newAccount.name || !this.newAccount.apiKey) {
-              this.addError = "Name and API key required";
+            if (!this.newAccount.name) {
+              this.addError = "Account name is required";
               return;
             }
             this.addLoading = true;
             try {
-              const r = await fetch("/api/dashboard/accounts", {
+              const r = await fetch("/api/dashboard/oauth/start", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(this.newAccount),
+                body: JSON.stringify({ name: this.newAccount.name }),
               });
               const d = await r.json();
               if (!r.ok) throw new Error(d.error || "Failed");
+              this.oauthUrl = d.authorizeUrl;
+              this.oauthState = d.state;
+              this.oauthStep = 2;
+            } catch (e) {
+              this.addError = e.message;
+            } finally {
+              this.addLoading = false;
+            }
+          },
+          async exchangeOAuth() {
+            this.addError = "";
+            if (!this.oauthCode.trim()) {
+              this.addError = "Paste the authorization code from the browser";
+              return;
+            }
+            this.addLoading = true;
+            try {
+              const r = await fetch("/api/dashboard/oauth/exchange", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  code: this.oauthCode.trim(),
+                  state: this.oauthState,
+                  name: this.newAccount.name,
+                  priority: this.newAccount.priority,
+                  weight: this.newAccount.weight,
+                }),
+              });
+              const d = await r.json();
+              if (!r.ok) throw new Error(d.error || "Failed to link account");
               this.showAddModal = false;
-              this.newAccount = {
-                name: "",
-                apiKey: "",
-                priority: 50,
-                weight: 1,
-              };
-              this.showToast("Account added", "success");
+              this.oauthStep = 1;
+              this.oauthUrl = "";
+              this.oauthCode = "";
+              this.oauthState = "";
+              this.newAccount = { name: "", priority: 50, weight: 1 };
+              this.showToast("Account linked via OAuth!", "success");
               await this.refreshAll();
             } catch (e) {
               this.addError = e.message;
