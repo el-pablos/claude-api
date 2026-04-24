@@ -8,15 +8,16 @@
 <img src="https://img.shields.io/badge/docker-ready-2496ED?style=for-the-badge&logo=docker&logoColor=white&labelColor=1e1f22" alt="docker">
 <img src="https://img.shields.io/badge/node-22+-339933?style=for-the-badge&logo=node.js&logoColor=white&labelColor=1e1f22" alt="node">
 <img src="https://img.shields.io/badge/typescript-strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white&labelColor=1e1f22" alt="typescript">
-<img src="https://img.shields.io/badge/tests-126%20passed-23a559?style=for-the-badge&labelColor=1e1f22" alt="tests">
+<img src="https://img.shields.io/badge/tests-200%20passed-23a559?style=for-the-badge&labelColor=1e1f22" alt="tests">
+<img src="https://img.shields.io/badge/auth-OAuth%20PKCE-FF6B35?style=for-the-badge&labelColor=1e1f22" alt="oauth">
 
 <br><br>
 
-**proxy server buat nge-pool multiple Anthropic API key dengan auto rotation, smart retry, dan monitoring dashboard real-time. satu command docker, langsung jalan.**
+**proxy server buat nge-pool multiple Claude OAuth session dengan auto rotation, smart retry, token auto-refresh, usage tracking, cost calculator, dan monitoring dashboard real-time.**
 
 <br>
 
-[Quick Start](#quick-start-docker) · [Dashboard](#dashboard) · [API Reference](#api-reference) · [Strategies](#pool-strategies) · [Docker](#docker)
+[Quick Start](#quick-start-docker) · [OAuth Login](#oauth-login-flow) · [Dashboard](#dashboard) · [API Reference](#api-reference) · [Strategies](#pool-strategies) · [Docker](#docker) · [Windows & VPS Guide](#cara-jalanin-di-windows-native) · [Usage & Cost](#usage--cost-tracking)
 
 </div>
 
@@ -24,28 +25,34 @@
 
 ## deskripsi
 
-claude-api adalah proxy server yang duduk di antara Claude Code (atau Anthropic SDK manapun) dan Anthropic API. fungsinya simpel tapi powerful: kamu masukin beberapa API key, dia yang urus rotasi, retry, dan monitoring.
+claude-api adalah proxy server yang duduk di antara Claude Code (atau Anthropic SDK manapun) dan Anthropic API. fungsinya simpel tapi powerful: kamu login pake akun Claude, dia yang urus rotasi session, retry, token refresh, dan monitoring.
 
-kenapa butuh ini? karena Anthropic punya rate limit per API key. kalo kamu cuma punya 1 key dan kena rate limit, ya stuck. tapi kalo punya 3-5 key dan di-pool, request otomatis pindah ke key lain yang masih available. zero downtime, zero manual intervention.
+kenapa butuh ini? karena Anthropic punya rate limit per session. kalo kamu cuma punya 1 akun dan kena rate limit, ya stuck. tapi kalo punya 2-5 akun Claude dan di-pool, request otomatis pindah ke session lain yang masih available. zero downtime, zero manual intervention.
 
-ini terinspirasi dari arsitektur [copilot-api](https://github.com/el-pablos/copilot-api) yang udah proven di production buat GitHub Copilot token pooling. konsepnya sama, tapi di-rebuild dari nol buat Anthropic Claude ecosystem.
+bedanya sama versi sebelumnya: **ga pake API key lagi**. sekarang pake **OAuth 2.0 PKCE flow** langsung dari akun Claude kamu. lebih aman, token auto-refresh, dan ga perlu generate API key manual di console.
+
+ini terinspirasi dari arsitektur [copilot-api](https://github.com/el-pablos/copilot-api) yang udah proven di production buat GitHub Copilot token pooling. konsepnya sama, tapi di-rebuild dari nol buat Anthropic Claude ecosystem dengan OAuth session-based auth.
 
 ### fitur utama
 
-- **multi API key pooling** — tambahin berapa aja key, semuanya di-manage otomatis
+- **OAuth 2.0 PKCE login** — login langsung pake akun Claude, ga perlu API key
+- **auto token refresh** — background job refresh token setiap 30 detik, 60 detik buffer sebelum expired
+- **multi session pooling** — tambahin berapa aja akun Claude, semuanya di-manage otomatis
 - **5 rotation strategies** — round-robin, weighted, least-used, priority, random
-- **auto failover** — key kena 429? langsung rotate ke key lain tanpa client tau
+- **auto failover** — session kena 429? langsung rotate ke session lain tanpa client tau
 - **smart retry** — exponential backoff dengan jitter, configurable max attempts
-- **rate limit detection** — deteksi 429 dari response, mark key, auto-recover setelah cooldown
-- **auth error handling** — key invalid (401/403)? langsung di-mark, ga dipake lagi sampe di-fix
-- **encrypted storage** — API key di-encrypt AES-256-GCM sebelum disimpan ke disk
-- **monitoring dashboard** — real-time stats, account management, log streaming, notifications
+- **rate limit detection** — deteksi 429 dari response, mark session, auto-recover setelah cooldown
+- **auth error handling** — token invalid (401/403)? langsung di-mark, ga dipake lagi sampe di-refresh
+- **encrypted storage** — OAuth tokens di-encrypt AES-256-GCM sebelum disimpan ke disk
+- **usage tracking** — track token usage per request: input tokens, output tokens, cache hits, per model & per account
+- **cost calculator** — hitung estimasi cost berdasarkan Anthropic pricing terbaru, daily cost history, cost by model
+- **monitoring dashboard** — real-time stats, account management, log streaming, usage charts, cost breakdown
 - **SSE log streaming** — live server logs langsung di browser, filter by level
 - **request history** — track semua request dengan pagination dan filtering
-- **notification center** — alert otomatis kalo ada key yang kena rate limit atau invalid
+- **notification center** — alert otomatis kalo ada session yang kena rate limit atau invalid
 - **docker ready** — 1 command, langsung jalan. cleanup juga bersih
 - **drop-in replacement** — cukup ganti `ANTHROPIC_BASE_URL`, Claude Code langsung lewat proxy
-- **mobile-first dashboard** — responsive, sidebar desktop, bottom nav mobile, touch-friendly
+- **forest green theme** — dashboard dengan warna hijau forest yang clean dan professional
 
 ---
 
@@ -72,9 +79,11 @@ ini terinspirasi dari arsitektur [copilot-api](https://github.com/el-pablos/copi
 │                                  │                    │
 │                    ┌─────────────▼──────────────┐    │
 │                    │    Account Pool Manager     │    │
+│                    │    (OAuth Session Pool)     │    │
 │                    │                             │    │
 │                    │  ┌────┐ ┌────┐ ┌────┐      │    │
-│                    │  │Key1│ │Key2│ │Key3│ ...   │    │
+│                    │  │Acc1│ │Acc2│ │Acc3│ ...   │    │
+│                    │  │OAuth│ │OAuth│ │OAuth│     │    │
 │                    │  └────┘ └────┘ └────┘      │    │
 │                    │                             │    │
 │                    │  Strategies:                │    │
@@ -85,21 +94,54 @@ ini terinspirasi dari arsitektur [copilot-api](https://github.com/el-pablos/copi
 │                                  │                    │
 │                    ┌─────────────▼──────────────┐    │
 │                    │      Proxy Handler          │    │
+│                    │   + Bearer Token Auth       │    │
+│                    │   + Auto Token Refresh      │    │
 │                    │   + Retry Logic (backoff)   │    │
 │                    │   + Rate Limit Detection    │    │
 │                    │   + SSE Pass-through        │    │
 │                    └─────────────┬──────────────┘    │
 │                                  │                    │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
-│  │  Dashboard  │  │  History    │  │Notification │  │
-│  │   WebUI     │  │  Tracker   │  │   Center    │  │
-│  └─────────────┘  └─────────────┘  └─────────────┘  │
+│  ┌───────────┐  ┌────────┐  ┌──────────┐  ┌──────┐ │
+│  │ Dashboard │  │History │  │  Usage   │  │ Cost │ │
+│  │  WebUI    │  │Tracker │  │ Tracker  │  │ Calc │ │
+│  └───────────┘  └────────┘  └──────────┘  └──────┘ │
 └──────────────────────┼───────────────────────────────┘
                        │
                        ▼
               ┌─────────────────┐
               │api.anthropic.com│
+              │ (Bearer token)  │
               └─────────────────┘
+```
+
+### OAuth PKCE flow
+
+```mermaid
+sequenceDiagram
+    participant U as User (Dashboard)
+    participant P as claude-api Proxy
+    participant C as claude.com OAuth
+
+    U->>P: POST /api/dashboard/oauth/start
+    P->>P: Generate PKCE challenge (verifier + S256)
+    P-->>U: Return authorize URL + state
+
+    U->>C: Open authorize URL in browser
+    C->>C: User login & consent
+    C-->>U: Redirect with authorization code
+
+    U->>P: POST /api/dashboard/oauth/exchange (code + state)
+    P->>C: Exchange code + verifier for tokens
+    C-->>P: access_token + refresh_token + expires_in
+    P->>P: Encrypt tokens, save to pool
+    P-->>U: Account created!
+
+    loop Every 30 seconds
+        P->>P: Check token expiry (60s buffer)
+        P->>C: Refresh token if expiring
+        C-->>P: New access_token
+        P->>P: Update encrypted storage
+    end
 ```
 
 ### stack teknologi
@@ -111,8 +153,10 @@ ini terinspirasi dari arsitektur [copilot-api](https://github.com/el-pablos/copi
 | framework   | Hono                                |
 | http server | @hono/node-server                   |
 | validation  | Zod                                 |
-| testing     | Vitest (126 tests)                  |
+| testing     | Vitest (200 tests, 10 suites)       |
 | dashboard   | Alpine.js + Tailwind CSS + Chart.js |
+| auth        | OAuth 2.0 PKCE (Claude SSO)         |
+| encryption  | AES-256-GCM (scrypt key derivation) |
 | container   | Docker (Alpine-based, multi-stage)  |
 | ci/cd       | GitHub Actions                      |
 
@@ -125,14 +169,17 @@ claude-api/
 │   ├── lib/
 │   │   ├── types.ts                # semua TypeScript types & interfaces
 │   │   ├── config.ts               # config loader dari environment variables
-│   │   ├── account-manager.ts      # core pool manager (add/remove/select/rotate)
+│   │   ├── account-manager.ts      # core pool manager (OAuth session pool)
+│   │   ├── oauth.ts                # OAuth 2.0 PKCE: challenge, exchange, refresh
 │   │   ├── pool-strategy.ts        # 5 selection strategies
-│   │   ├── proxy.ts                # proxy handler + retry + rate limit detection
+│   │   ├── proxy.ts                # proxy handler + Bearer auth + retry
 │   │   ├── retry.ts                # exponential backoff dengan jitter
-│   │   ├── crypto.ts               # AES-256-GCM encrypt/decrypt
+│   │   ├── crypto.ts               # AES-256-GCM encrypt/decrypt tokens
 │   │   ├── logger.ts               # structured JSON logger + event emitter
 │   │   ├── metrics.ts              # request metrics (RPM, avg response time)
 │   │   ├── storage.ts              # file-based JSON persistence (debounced)
+│   │   ├── usage-tracker.ts        # token usage tracking per request
+│   │   ├── cost-calculator.ts      # cost estimation (Anthropic pricing)
 │   │   ├── request-history.ts      # request history tracker + SSE events
 │   │   └── notification-center.ts  # notification CRUD + events
 │   ├── middleware/
@@ -143,7 +190,8 @@ claude-api/
 │   │   ├── api.ts                  # proxy routes (POST /v1/messages, GET /v1/models)
 │   │   ├── health.ts               # health check endpoints (k8s compatible)
 │   │   ├── dashboard.ts            # serve dashboard HTML
-│   │   ├── dashboard-api.ts        # dashboard REST API (14 endpoints)
+│   │   ├── dashboard-api.ts        # dashboard REST API + OAuth endpoints
+│   │   ├── usage-api.ts            # usage & cost tracking API
 │   │   ├── log-stream.ts           # SSE log streaming
 │   │   ├── history-api.ts          # request history API + SSE
 │   │   └── notifications-api.ts    # notification CRUD API
@@ -152,13 +200,16 @@ claude-api/
 ├── tests/
 │   ├── setup.ts
 │   └── unit/lib/
-│       ├── account-manager.test.ts  # 44 tests
+│       ├── account-manager.test.ts  # 45 tests (OAuth mocked)
+│       ├── oauth.test.ts            # 36 tests
 │       ├── pool-strategy.test.ts    # 23 tests
 │       ├── retry.test.ts            # 22 tests
+│       ├── cost-calculator.test.ts  # 22 tests
+│       ├── usage-tracker.test.ts    # 15 tests
 │       ├── crypto.test.ts           # 11 tests
 │       ├── metrics.test.ts          # 11 tests
-│       ├── config.test.ts           # 7 tests
-│       └── storage.test.ts          # 8 tests
+│       ├── storage.test.ts          # 8 tests
+│       └── config.test.ts           # 7 tests
 ├── Dockerfile                       # multi-stage build (deps → test → production)
 ├── docker-compose.yml               # 1-command setup
 ├── .dockerignore
@@ -179,10 +230,13 @@ flowchart TD
     B --> C{Auth Check}
     C -->|Valid| D[Account Pool Manager]
     C -->|Invalid| Z[401 Unauthorized]
-    D --> E{Ada key active?}
-    E -->|Ya| F[Select API Key by Strategy]
+    D --> E{Ada session active?}
+    E -->|Ya| F[Select Account by Strategy]
     E -->|Tidak| G[503 All Exhausted]
-    F --> H[Forward ke api.anthropic.com]
+    F --> T{Token expiring?}
+    T -->|Ya| U[Auto Refresh Token]
+    U --> H
+    T -->|Tidak| H[Forward ke api.anthropic.com]
     H --> I{Response?}
     I -->|200 OK| J[Return ke Client]
     I -->|429 Rate Limit| K[Mark Rate Limited]
@@ -194,13 +248,15 @@ flowchart TD
     I -->|5xx Server| N[Mark Failed + Retry]
     N --> L
     J --> O[Record History]
-    O --> P[Update Metrics]
+    O --> P[Extract Usage & Cost]
+    P --> Q[Update Metrics]
 
-    style A fill:#5865f2,stroke:#4752c4,color:#fff
-    style J fill:#23a559,stroke:#1e8e4a,color:#fff
+    style A fill:#285A48,stroke:#1e4636,color:#fff
+    style J fill:#408A71,stroke:#337058,color:#fff
     style G fill:#da373c,stroke:#a12828,color:#fff
     style Z fill:#da373c,stroke:#a12828,color:#fff
-    style D fill:#00b4d8,stroke:#0090ad,color:#fff
+    style D fill:#285A48,stroke:#1e4636,color:#fff
+    style U fill:#B0E4CC,stroke:#408A71,color:#091413
 ```
 
 ---
@@ -216,12 +272,17 @@ erDiagram
         object config
     }
 
-    API_KEY_ACCOUNT {
+    OAUTH_ACCOUNT {
         uuid id PK
         string name
-        string apiKey_encrypted
         enum status "active|rate_limited|invalid|disabled"
         int inFlight
+    }
+
+    OAUTH_TOKEN_DATA {
+        string accessToken_encrypted
+        string refreshToken_encrypted
+        timestamp expiresAt
     }
 
     USAGE {
@@ -247,6 +308,24 @@ erDiagram
         timestamp lastCheckAt
     }
 
+    USAGE_RECORD {
+        timestamp timestamp
+        string accountId FK
+        string accountName
+        string model
+        int inputTokens
+        int outputTokens
+        int cacheReadTokens
+        int cacheWriteTokens
+        float cost
+    }
+
+    DAILY_COST {
+        string date
+        string model
+        float totalCost
+    }
+
     HISTORY_ENTRY {
         uuid id PK
         timestamp timestamp
@@ -270,13 +349,16 @@ erDiagram
         boolean read
     }
 
-    POOL_STATE ||--o{ API_KEY_ACCOUNT : contains
-    API_KEY_ACCOUNT ||--|| USAGE : has
-    API_KEY_ACCOUNT ||--|| RATE_LIMIT : has
-    API_KEY_ACCOUNT ||--|| METADATA : has
-    API_KEY_ACCOUNT ||--|| HEALTH : has
-    API_KEY_ACCOUNT ||--o{ HISTORY_ENTRY : generates
+    POOL_STATE ||--o{ OAUTH_ACCOUNT : contains
+    OAUTH_ACCOUNT ||--|| OAUTH_TOKEN_DATA : has
+    OAUTH_ACCOUNT ||--|| USAGE : has
+    OAUTH_ACCOUNT ||--|| RATE_LIMIT : has
+    OAUTH_ACCOUNT ||--|| METADATA : has
+    OAUTH_ACCOUNT ||--|| HEALTH : has
+    OAUTH_ACCOUNT ||--o{ USAGE_RECORD : tracks
+    OAUTH_ACCOUNT ||--o{ HISTORY_ENTRY : generates
     POOL_STATE ||--o{ NOTIFICATION : emits
+    USAGE_RECORD }|--|| DAILY_COST : aggregates
 ```
 
 ---
@@ -341,6 +423,78 @@ npm start
 
 ---
 
+## OAuth login flow
+
+cara nambahin akun Claude ke pool:
+
+### via dashboard (recommended)
+
+1. buka `http://localhost:4143/dashboard` → tab **Accounts**
+2. klik tombol **"Login with Claude"**
+3. masukin nama akun (misal: "Claude Utama")
+4. klik **"Generate OAuth URL"** — sistem generate PKCE challenge
+5. **copy URL** yang muncul, buka di browser baru
+6. login ke akun Claude kamu, authorize aksesnya
+7. kamu akan di-redirect ke halaman dengan **authorization code**
+8. **copy code** tersebut, paste di form dashboard
+9. klik **"Link Account"** — selesai! akun langsung aktif di pool
+
+### via API
+
+```bash
+# step 1: generate OAuth URL
+curl -X POST http://localhost:4143/api/dashboard/oauth/start \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Claude Utama"}'
+
+# response: { authorizeUrl: "https://claude.com/cai/oauth/authorize?...", state: "xxx" }
+# buka authorizeUrl di browser, login, copy code
+
+# step 2: exchange code
+curl -X POST http://localhost:4143/api/dashboard/oauth/exchange \
+  -H "Content-Type: application/json" \
+  -d '{"code":"paste-code-disini","state":"xxx","name":"Claude Utama"}'
+```
+
+### auto token refresh
+
+setelah login, kamu ga perlu ngapa-ngapain lagi. claude-api punya background job yang:
+
+- jalan setiap **30 detik**
+- cek semua token yang aktif
+- kalau token tinggal **60 detik** sebelum expired, otomatis refresh
+- token baru di-encrypt dan disimpan ke disk
+- zero downtime, zero manual intervention
+
+---
+
+## usage & cost tracking
+
+claude-api track semua usage dan cost dari setiap request:
+
+### yang di-track
+
+- **input tokens** — jumlah token yang dikirim ke API
+- **output tokens** — jumlah token yang di-generate API
+- **cache read tokens** — token yang dibaca dari cache (hemat cost)
+- **cache write tokens** — token yang ditulis ke cache
+- **model** — model apa yang dipake (Opus, Sonnet, Haiku)
+- **cost** — estimasi cost berdasarkan Anthropic pricing terbaru
+
+### cost calculator
+
+pricing yang di-support (per 1M tokens):
+
+| model            | input  | output | cache read | cache write |
+| ---------------- | ------ | ------ | ---------- | ----------- |
+| Claude Opus 4    | $15.00 | $75.00 | $1.50      | $18.75      |
+| Claude Sonnet 4  | $3.00  | $15.00 | $0.30      | $3.75       |
+| Claude Haiku 3.5 | $0.80  | $4.00  | $0.08      | $1.00       |
+
+semua data bisa dilihat di dashboard tab **Usage** dan **Cost**.
+
+---
+
 ## docker
 
 ### build manual
@@ -354,7 +508,6 @@ docker run -d \
   --name claude-api \
   -p 4143:4143 \
   -e ENCRYPTION_KEY="your-32-char-key-here-minimum!!" \
-  -e API_SECRET_KEY="your-dashboard-secret" \
   -v claude-data:/app/data \
   -v claude-logs:/app/logs \
   claude-api
@@ -397,58 +550,171 @@ image-nya based on `node:22-alpine` — lightweight (~180MB), security-hardened 
 
 ## dashboard
 
-dashboard web-based yang bisa diakses di `http://localhost:4143/dashboard`. dibangun pake Alpine.js + Tailwind CSS dengan Discord-style dark theme.
+dashboard web-based yang bisa diakses di `http://localhost:4143/dashboard`. dibangun pake Alpine.js + Tailwind CSS dengan **forest green dark theme** (#091413, #285A48, #408A71, #B0E4CC).
 
 ### tabs yang tersedia
 
-| tab               | fungsi                                                                                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Dashboard**     | overview stats — total keys, active, rate limited, invalid, disabled, req/min, success rate, avg response time, distribution chart |
-| **Accounts**      | manage API keys — tambah, hapus, disable/enable, reset rate limit. tabel dengan status badge, request count, success rate          |
-| **Logs**          | real-time server log streaming via SSE. filter by level (info/warn/error/debug), pause/resume, clear                               |
-| **History**       | request history — semua request yang pernah diproses. filter by status, stats aggregated                                           |
-| **Settings**      | config — pool strategy, max retries, rate limit cooldown, log level. server info panel                                             |
-| **Notifications** | alert center — notifikasi otomatis saat key rate limited, invalid, atau recovered                                                  |
-
-### responsive design
-
-- **desktop**: fixed sidebar 240px, spacious cards, data tables
-- **mobile**: sticky header, bottom navigation (4 items), touch-friendly, compact tables
+| tab               | fungsi                                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Dashboard**     | overview stats — total sessions, active, rate limited, invalid, disabled, req/min, success rate, avg response time |
+| **Accounts**      | manage OAuth sessions — login Claude, hapus, disable/enable, refresh token, reset rate limit                       |
+| **Usage**         | token usage tracking — total tokens, by model breakdown bars, hourly chart, per-account usage table                |
+| **Cost**          | cost estimation — total/today/avg cost, cost by model & account, daily line chart, pricing reference               |
+| **Logs**          | real-time server log streaming via SSE. filter by level (info/warn/error/debug), pause/resume, clear               |
+| **History**       | request history — semua request yang pernah diproses. filter by status, stats aggregated                           |
+| **Settings**      | config — pool strategy, max retries, rate limit cooldown, log level. server info panel                             |
+| **Notifications** | alert center — notifikasi otomatis saat session rate limited, invalid, atau recovered                              |
 
 ---
 
-## cara pakai
+## cara jalanin di Windows native
 
-### 1. tambah API key
+tanpa Docker, langsung di Windows:
 
-**via dashboard:**
-buka `http://localhost:4143/dashboard` → tab Accounts → klik "+ Add Key"
+### prerequisites
 
-**via API:**
+1. install [Node.js 22+](https://nodejs.org/) — download LTS, install, pastiin `node --version` bisa jalan di terminal
+2. install [Git](https://git-scm.com/download/win)
 
-```bash
-curl -X POST http://localhost:4143/api/dashboard/accounts \
-  -H "Content-Type: application/json" \
-  -d '{"name":"key-1","apiKey":"sk-ant-api03-xxx","priority":50,"weight":1}'
+### langkah-langkah
+
+```powershell
+# clone repo
+git clone https://github.com/el-pablos/claude-api.git
+cd claude-api
+
+# install dependencies
+npm install
+
+# buat .env file
+copy env.example .env
+# edit .env pake notepad:
+# ENCRYPTION_KEY=masukkan-minimal-32-karakter-random-disini
+
+# jalanin development mode (auto-reload)
+npm run dev
+
+# ATAU production mode
+npm start
 ```
 
-### 2. arahkan Claude Code
+### set Claude Code supaya lewat proxy
+
+```powershell
+# set env variable (PowerShell)
+$env:ANTHROPIC_BASE_URL = "http://localhost:4143"
+claude
+
+# ATAU set permanent di System Environment Variables
+# Settings → System → About → Advanced → Environment Variables
+# tambah: ANTHROPIC_BASE_URL = http://localhost:4143
+```
+
+### autostart (opsional)
+
+bikin file `start-claude-api.bat`:
+
+```bat
+@echo off
+cd /d D:\work\claude-api
+npm start
+```
+
+taruh di `shell:startup` biar jalan otomatis pas boot.
+
+---
+
+## cara jalanin di VPS (Linux)
+
+### prerequisites
+
+- VPS dengan minimal 512MB RAM (Ubuntu 22.04+ recommended)
+- Node.js 22+ atau Docker
+
+### via Docker (recommended buat VPS)
 
 ```bash
-export ANTHROPIC_BASE_URL=http://localhost:4143
+# install docker (kalau belum)
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+# logout & login lagi
+
+# clone & setup
+git clone https://github.com/el-pablos/claude-api.git
+cd claude-api
+
+# buat .env
+echo "ENCRYPTION_KEY=$(openssl rand -hex 16)" > .env
+echo "DASHBOARD_PASSWORD=ganti-ini-ya" >> .env
+
+# jalanin
+docker compose up -d
+
+# cek logs
+docker compose logs -f
+```
+
+### via Node.js langsung
+
+```bash
+# install Node.js 22
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# clone & install
+git clone https://github.com/el-pablos/claude-api.git
+cd claude-api
+npm install
+
+# buat .env
+cp env.example .env
+nano .env  # edit ENCRYPTION_KEY
+
+# jalanin pake PM2 (supaya jalan background)
+npm install -g pm2
+pm2 start npm --name claude-api -- start
+pm2 save
+pm2 startup  # autostart saat boot
+```
+
+### akses dari luar
+
+```bash
+# kalau VPS-nya punya firewall
+sudo ufw allow 4143
+
+# akses dashboard
+# http://ip-vps-kamu:4143/dashboard
+
+# set Claude Code di local machine
+export ANTHROPIC_BASE_URL=http://ip-vps-kamu:4143
 claude
 ```
 
-selesai. semua request Claude Code otomatis lewat proxy, key dirotasi otomatis.
+### pakai nginx reverse proxy (opsional, buat domain + SSL)
 
-### 3. monitor
+```nginx
+server {
+    listen 80;
+    server_name claude.domain-kamu.com;
 
-buka dashboard, pantau real-time:
+    location / {
+        proxy_pass http://127.0.0.1:4143;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 300s;
+    }
+}
+```
 
-- key mana yang aktif
-- berapa req/min
-- ada yang kena rate limit ga
-- log server live
+```bash
+# install certbot buat SSL
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d claude.domain-kamu.com
+```
 
 ---
 
@@ -461,7 +727,7 @@ semua via environment variables:
 | `PORT`                       | `4143`                      | port server                                     |
 | `HOST`                       | `0.0.0.0`                   | host binding                                    |
 | `API_SECRET_KEY`             | -                           | secret key buat dashboard API auth              |
-| `ENCRYPTION_KEY`             | -                           | key enkripsi credential (min 32 chars)          |
+| `ENCRYPTION_KEY`             | -                           | key enkripsi OAuth tokens (min 32 chars)        |
 | `POOL_STRATEGY`              | `round-robin`               | strategi rotasi (lihat section pool strategies) |
 | `MAX_RETRIES`                | `3`                         | max retry per request                           |
 | `RATE_LIMIT_COOLDOWN`        | `60000`                     | cooldown setelah rate limit (ms)                |
@@ -479,33 +745,33 @@ semua via environment variables:
 
 ### round-robin (default)
 
-request didistribusi merata ke semua key secara berurutan. key pertama, kedua, ketiga, balik lagi ke pertama. key yang rate limited otomatis di-skip.
+request didistribusi merata ke semua session secara berurutan. session pertama, kedua, ketiga, balik lagi ke pertama. session yang rate limited otomatis di-skip.
 
 **cocok buat**: distribusi merata, general purpose
 
 ### weighted
 
-mirip round-robin tapi key dengan weight lebih tinggi dapat lebih banyak request. key weight 3 dapat 3x lebih banyak dari weight 1.
+mirip round-robin tapi session dengan weight lebih tinggi dapat lebih banyak request. session weight 3 dapat 3x lebih banyak dari weight 1.
 
-**cocok buat**: key dengan tier/limit berbeda
+**cocok buat**: akun dengan tier/limit berbeda
 
 ### least-used
 
-selalu pilih key yang paling sedikit sedang memproses request (in-flight). kalau ada tie, pilih yang total request-nya paling rendah.
+selalu pilih session yang paling sedikit sedang memproses request (in-flight). kalau ada tie, pilih yang total request-nya paling rendah.
 
 **cocok buat**: request yang response time-nya bervariasi
 
 ### priority
 
-selalu coba key priority tertinggi dulu. turun ke priority lebih rendah kalau yang tinggi lagi ga available.
+selalu coba session priority tertinggi dulu. turun ke priority lebih rendah kalau yang tinggi lagi ga available.
 
-**cocok buat**: key premium sebagai primary, key murah sebagai fallback
+**cocok buat**: akun premium sebagai primary, akun biasa sebagai fallback
 
 ### random
 
-pilih key secara acak dari yang available. unpredictable tapi simple.
+pilih session secara acak dari yang available. unpredictable tapi simple.
 
-**cocok buat**: distribusi tanpa pattern, anti-detection
+**cocok buat**: distribusi tanpa pattern
 
 ---
 
@@ -531,31 +797,54 @@ endpoint ini yang dipakai client (Claude Code):
 
 ### dashboard API
 
-| method   | path                                           | deskripsi                   |
-| -------- | ---------------------------------------------- | --------------------------- |
-| `GET`    | `/api/dashboard/stats`                         | pool statistics             |
-| `GET`    | `/api/dashboard/status`                        | server version, uptime      |
-| `GET`    | `/api/dashboard/accounts`                      | list semua account          |
-| `GET`    | `/api/dashboard/accounts/:id`                  | detail satu account         |
-| `POST`   | `/api/dashboard/accounts`                      | tambah account              |
-| `PUT`    | `/api/dashboard/accounts/:id`                  | update account              |
-| `DELETE` | `/api/dashboard/accounts/:id`                  | hapus account               |
-| `POST`   | `/api/dashboard/accounts/:id/disable`          | disable account             |
-| `POST`   | `/api/dashboard/accounts/:id/enable`           | enable account              |
-| `POST`   | `/api/dashboard/accounts/:id/reset-rate-limit` | reset rate limit            |
-| `GET`    | `/api/dashboard/metrics`                       | real-time metrics           |
-| `GET`    | `/api/dashboard/logs`                          | recent request logs         |
-| `GET`    | `/api/dashboard/logs/stream`                   | SSE log streaming           |
-| `GET`    | `/api/dashboard/config`                        | read config                 |
-| `PUT`    | `/api/dashboard/config`                        | update config               |
-| `GET`    | `/api/dashboard/history`                       | request history (paginated) |
-| `GET`    | `/api/dashboard/history/stats`                 | history statistics          |
-| `DELETE` | `/api/dashboard/history`                       | clear history               |
-| `GET`    | `/api/dashboard/notifications`                 | list notifications          |
-| `POST`   | `/api/dashboard/notifications/:id/read`        | mark read                   |
-| `POST`   | `/api/dashboard/notifications/read-all`        | mark all read               |
-| `DELETE` | `/api/dashboard/notifications/:id`             | delete notification         |
-| `DELETE` | `/api/dashboard/notifications`                 | clear all                   |
+| method   | path                                           | deskripsi              |
+| -------- | ---------------------------------------------- | ---------------------- |
+| `GET`    | `/api/dashboard/stats`                         | pool statistics        |
+| `GET`    | `/api/dashboard/status`                        | server version, uptime |
+| `GET`    | `/api/dashboard/accounts`                      | list semua account     |
+| `GET`    | `/api/dashboard/accounts/:id`                  | detail satu account    |
+| `PUT`    | `/api/dashboard/accounts/:id`                  | update account         |
+| `DELETE` | `/api/dashboard/accounts/:id`                  | hapus account          |
+| `POST`   | `/api/dashboard/accounts/:id/disable`          | disable account        |
+| `POST`   | `/api/dashboard/accounts/:id/enable`           | enable account         |
+| `POST`   | `/api/dashboard/accounts/:id/reset-rate-limit` | reset rate limit       |
+| `POST`   | `/api/dashboard/accounts/:id/refresh-token`    | manual token refresh   |
+| `GET`    | `/api/dashboard/metrics`                       | real-time metrics      |
+| `GET`    | `/api/dashboard/logs`                          | recent request logs    |
+| `GET`    | `/api/dashboard/logs/stream`                   | SSE log streaming      |
+| `GET`    | `/api/dashboard/config`                        | read config            |
+| `PUT`    | `/api/dashboard/config`                        | update config          |
+
+### OAuth endpoints
+
+| method | path                            | deskripsi                   |
+| ------ | ------------------------------- | --------------------------- |
+| `POST` | `/api/dashboard/oauth/start`    | generate PKCE authorize URL |
+| `POST` | `/api/dashboard/oauth/exchange` | exchange code for tokens    |
+| `GET`  | `/api/dashboard/oauth/pending`  | cek jumlah pending auth     |
+
+### usage & cost endpoints
+
+| method | path                                | deskripsi                     |
+| ------ | ----------------------------------- | ----------------------------- |
+| `GET`  | `/api/dashboard/usage`              | usage overview + by model     |
+| `GET`  | `/api/dashboard/usage/accounts/:id` | usage per account             |
+| `GET`  | `/api/dashboard/usage/records`      | raw usage records             |
+| `GET`  | `/api/dashboard/cost`               | cost overview + daily history |
+| `GET`  | `/api/dashboard/cost/pricing`       | current pricing table         |
+
+### history & notification endpoints
+
+| method   | path                                    | deskripsi           |
+| -------- | --------------------------------------- | ------------------- |
+| `GET`    | `/api/dashboard/history`                | request history     |
+| `GET`    | `/api/dashboard/history/stats`          | history statistics  |
+| `DELETE` | `/api/dashboard/history`                | clear history       |
+| `GET`    | `/api/dashboard/notifications`          | list notifications  |
+| `POST`   | `/api/dashboard/notifications/:id/read` | mark read           |
+| `POST`   | `/api/dashboard/notifications/read-all` | mark all read       |
+| `DELETE` | `/api/dashboard/notifications/:id`      | delete notification |
+| `DELETE` | `/api/dashboard/notifications`          | clear all           |
 
 ---
 
@@ -584,15 +873,17 @@ endpoint ini yang dipakai client (Claude Code):
 - **ACTIVE → INVALID**: response 401/403, atau 5+ consecutive failures
 - **ACTIVE → DISABLED**: admin disable manual via dashboard
 - **RATE_LIMITED → ACTIVE**: otomatis setelah cooldown period
-- **INVALID → ACTIVE**: admin enable manual via dashboard
+- **INVALID → ACTIVE**: admin enable manual via dashboard / auto token refresh berhasil
 - **DISABLED → ACTIVE**: admin enable manual via dashboard
 
 ---
 
 ## security
 
-- **API key encryption**: semua key di-encrypt AES-256-GCM sebelum disimpan ke disk
-- **key masking**: API key ga pernah di-log atau di-return full — selalu masked (`sk-ant-...xxxx`)
+- **OAuth token encryption**: semua tokens di-encrypt AES-256-GCM (scrypt key derivation) sebelum disimpan ke disk
+- **token masking**: OAuth token ga pernah di-log atau di-return full — selalu masked (`eyJhbGc...xxxx`)
+- **PKCE flow**: authorization code exchange pake Proof Key for Code Exchange — ga bisa di-intercept
+- **auto token refresh**: token expired otomatis di-refresh, ga perlu re-login
 - **dashboard auth**: basic auth + bearer token authentication
 - **non-root docker**: container jalan sebagai non-root user
 - **proper signal handling**: tini sebagai PID 1, graceful shutdown
@@ -618,17 +909,20 @@ npm run test:watch
 test stats saat ini:
 
 ```
-Test Suites:  7 passed (7)
-Tests:        126 passed (126)
-Duration:     ~7s
+Test Suites:  10 passed (10)
+Tests:        200 passed (200)
+Duration:     ~12s
 ```
 
 test coverage meliputi:
 
-- account-manager: add, remove, update, rotation, state changes, events (44 tests)
+- account-manager: OAuth login, rotation, state changes, token refresh, events (45 tests)
+- oauth: PKCE challenge, token exchange, refresh, expiry check (36 tests)
 - pool-strategy: round-robin, weighted, least-used, priority, random (23 tests)
+- cost-calculator: pricing, daily cost, model detection (22 tests)
 - retry: exponential backoff, retryable status detection, context passing (22 tests)
-- crypto: encrypt/decrypt, key masking, edge cases (11 tests)
+- usage-tracker: recording, aggregation, by model/account/hourly (15 tests)
+- crypto: encrypt/decrypt, token masking, edge cases (11 tests)
 - metrics: recording, RPM calculation, percentiles (11 tests)
 - storage: load, save, corrupt handling, directory creation (8 tests)
 - config: env parsing, validation, defaults (7 tests)
@@ -637,20 +931,26 @@ test coverage meliputi:
 
 ## troubleshooting
 
-**semua key kena rate limit**
-→ proxy return 503. tunggu cooldown atau tambah key baru di dashboard.
+**semua session kena rate limit**
+→ proxy return 503. tunggu cooldown atau tambahin akun Claude baru di dashboard.
 
-**key di-mark invalid**
-→ cek key di Anthropic Console. enable kembali via dashboard setelah fix.
+**session di-mark invalid**
+→ coba refresh token manual di dashboard. kalau tetep gagal, login ulang akun tersebut.
+
+**token expired terus**
+→ cek log, pastiin background refresh job jalan. refresh interval default 30 detik.
 
 **streaming ga jalan**
-→ pastikan client support SSE. proxy forward streaming as-is.
+→ pastiin client support SSE. proxy forward streaming as-is.
 
 **dashboard ga bisa diakses**
 → cek `DASHBOARD_ENABLED=true`. kalo pake password, set `DASHBOARD_PASSWORD`.
 
 **docker container ga start**
 → cek logs: `docker compose logs claude-api`. biasanya masalah ENCRYPTION_KEY belum di-set.
+
+**OAuth login gagal**
+→ pastiin bisa akses `https://claude.com` dari browser. URL authorize harus dibuka di browser yang bisa login Claude.
 
 ---
 
@@ -696,15 +996,17 @@ npm test
 
 | metrik          | value            |
 | --------------- | ---------------- |
-| total files     | 27+ source files |
-| total tests     | 126              |
+| total files     | 30+ source files |
+| total tests     | 200              |
+| test suites     | 10               |
 | test pass rate  | 100%             |
 | docker image    | ~180MB (alpine)  |
 | startup time    | < 1s             |
 | dependencies    | 4 runtime, 5 dev |
-| API endpoints   | 24               |
+| API endpoints   | 30+              |
 | pool strategies | 5                |
-| dashboard tabs  | 6                |
+| dashboard tabs  | 8                |
+| auth method     | OAuth 2.0 PKCE   |
 
 ---
 
