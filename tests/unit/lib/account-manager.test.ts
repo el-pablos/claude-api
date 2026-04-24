@@ -5,9 +5,53 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 
+vi.mock("~/lib/oauth", () => {
+  const pendingAuths = new Map();
+  let counter = 0;
+  return {
+    startAuth: vi.fn((name: string) => {
+      counter++;
+      const state = `test-state-${counter}`;
+      const pending = {
+        challenge: {
+          codeVerifier: `verifier-${counter}`,
+          codeChallenge: `challenge-${counter}`,
+          state,
+        },
+        authorizeUrl: `https://claude.com/cai/oauth/authorize?state=${state}`,
+        createdAt: Date.now(),
+        accountName: name,
+      };
+      pendingAuths.set(state, pending);
+      return pending;
+    }),
+    getPendingAuth: vi.fn((state: string) => pendingAuths.get(state) || null),
+    getLatestPendingAuth: vi.fn(() => {
+      let latest = null;
+      for (const p of pendingAuths.values()) {
+        if (!latest || p.createdAt > latest.createdAt) latest = p;
+      }
+      return latest;
+    }),
+    removePendingAuth: vi.fn((state: string) => pendingAuths.delete(state)),
+    getPendingAuthCount: vi.fn(() => pendingAuths.size),
+    exchangeCodeForTokens: vi.fn(async () => ({
+      accessToken: `access-token-${Date.now()}`,
+      refreshToken: `refresh-token-${Date.now()}`,
+      expiresAt: Date.now() + 3600_000,
+    })),
+    refreshAccessToken: vi.fn(async () => ({
+      accessToken: `refreshed-token-${Date.now()}`,
+      refreshToken: `refresh-token-${Date.now()}`,
+      expiresAt: Date.now() + 3600_000,
+    })),
+    isTokenExpiringSoon: vi.fn(() => false),
+  };
+});
+
 function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   return {
-    port: 4141,
+    port: 4143,
     host: "0.0.0.0",
     nodeEnv: "test",
     apiSecretKey: "test-secret",
@@ -28,6 +72,23 @@ function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     dashboardPassword: "",
     ...overrides,
   };
+}
+
+import { startAuth } from "~/lib/oauth";
+
+async function addTestAccount(
+  manager: AccountManager,
+  name: string,
+  opts?: { priority?: number; weight?: number },
+) {
+  const pending = startAuth(name);
+  return manager.addAccount({
+    name,
+    oauthCode: `code-for-${name}`,
+    state: pending.challenge.state,
+    priority: opts?.priority,
+    weight: opts?.weight,
+  });
 }
 
 describe("AccountManager", () => {
@@ -63,7 +124,7 @@ describe("AccountManager", () => {
       await m2.shutdown();
     });
 
-    it("harus handle storage kosong (fresh start)", async () => {
+    it("harus handle storage kosong (fresh start)", () => {
       expect(manager.getAllAccounts()).toHaveLength(0);
       expect(manager.hasAvailableAccounts()).toBe(false);
     });
@@ -87,67 +148,52 @@ describe("AccountManager", () => {
   });
 
   describe("addAccount()", () => {
-    it("harus berhasil menambah account baru dengan data valid", async () => {
-      const account = await manager.addAccount({
-        name: "test-key",
-        apiKey: "sk-ant-api03-test-key-123",
-      });
+    it("harus berhasil menambah account baru via oauth", async () => {
+      const account = await addTestAccount(manager, "test-account");
       expect(account.id).toBeDefined();
-      expect(account.name).toBe("test-key");
+      expect(account.name).toBe("test-account");
       expect(account.status).toBe("active");
       expect(manager.getAllAccounts()).toHaveLength(1);
     });
 
-    it("harus throw error jika apiKey sudah ada di pool", async () => {
-      await manager.addAccount({
-        name: "key-1",
-        apiKey: "sk-ant-api03-same-key",
-      });
+    it("harus throw error jika oauth code kosong", async () => {
+      startAuth("test");
       await expect(
-        manager.addAccount({
-          name: "key-2",
-          apiKey: "sk-ant-api03-same-key",
-        }),
-      ).rejects.toThrow("already exists");
-    });
-
-    it("harus throw error jika apiKey kosong", async () => {
-      await expect(
-        manager.addAccount({ name: "test", apiKey: "" }),
-      ).rejects.toThrow("API key is required");
+        manager.addAccount({ name: "test", oauthCode: "" }),
+      ).rejects.toThrow("OAuth authorization code is required");
     });
 
     it("harus throw error jika name kosong", async () => {
+      startAuth("test");
       await expect(
-        manager.addAccount({ name: "", apiKey: "sk-ant-test" }),
+        manager.addAccount({ name: "", oauthCode: "test-code" }),
       ).rejects.toThrow("Account name is required");
     });
 
+    it("harus throw error jika tidak ada pending auth", async () => {
+      await expect(
+        manager.addAccount({
+          name: "test",
+          oauthCode: "code",
+          state: "nonexistent-state",
+        }),
+      ).rejects.toThrow("No pending OAuth session");
+    });
+
     it("harus assign UUID unik", async () => {
-      const a1 = await manager.addAccount({
-        name: "k1",
-        apiKey: "sk-ant-key-1",
-      });
-      const a2 = await manager.addAccount({
-        name: "k2",
-        apiKey: "sk-ant-key-2",
-      });
+      const a1 = await addTestAccount(manager, "k1");
+      const a2 = await addTestAccount(manager, "k2");
       expect(a1.id).not.toBe(a2.id);
     });
 
     it("harus set default priority dan weight", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       expect(account.metadata.priority).toBe(50);
       expect(account.metadata.weight).toBe(1);
     });
 
     it("harus accept custom priority dan weight", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
+      const account = await addTestAccount(manager, "test", {
         priority: 90,
         weight: 5,
       });
@@ -155,31 +201,24 @@ describe("AccountManager", () => {
       expect(account.metadata.weight).toBe(5);
     });
 
-    it("harus encrypt credential", async () => {
-      await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-secret-key",
-      });
+    it("harus encrypt oauth tokens", async () => {
+      await addTestAccount(manager, "test");
       const state = manager.getState();
-      const raw = state.accounts[0].apiKey;
-      expect(raw).not.toBe("sk-ant-secret-key");
-      expect(raw).toContain(":");
+      const rawToken = state.accounts[0].oauth.accessToken;
+      expect(rawToken).toContain(":");
     });
 
     it("harus emit account:added event", async () => {
       const spy = vi.fn();
       manager.on("account:added", spy);
-      await manager.addAccount({ name: "test", apiKey: "sk-ant-test" });
+      await addTestAccount(manager, "test");
       expect(spy).toHaveBeenCalledOnce();
     });
   });
 
   describe("removeAccount()", () => {
     it("harus remove account dari pool", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       await manager.removeAccount(account.id);
       expect(manager.getAllAccounts()).toHaveLength(0);
     });
@@ -193,10 +232,7 @@ describe("AccountManager", () => {
     it("harus emit account:removed event", async () => {
       const spy = vi.fn();
       manager.on("account:removed", spy);
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       await manager.removeAccount(account.id);
       expect(spy).toHaveBeenCalledOnce();
     });
@@ -208,60 +244,39 @@ describe("AccountManager", () => {
     });
 
     it("harus return null jika semua account tidak active", async () => {
-      const a = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const a = await addTestAccount(manager, "test");
       await manager.disableAccount(a.id);
       expect(manager.getNextAccount()).toBeNull();
     });
 
     it("harus skip account rate_limited", async () => {
-      const a1 = await manager.addAccount({
-        name: "k1",
-        apiKey: "sk-ant-key-1",
-      });
-      const a2 = await manager.addAccount({
-        name: "k2",
-        apiKey: "sk-ant-key-2",
-      });
+      const a1 = await addTestAccount(manager, "k1");
+      const a2 = await addTestAccount(manager, "k2");
       manager.markRateLimited(a1.id);
       const selected = manager.getNextAccount();
       expect(selected?.id).toBe(a2.id);
     });
 
     it("harus skip account invalid", async () => {
-      const a1 = await manager.addAccount({
-        name: "k1",
-        apiKey: "sk-ant-key-1",
-      });
-      const a2 = await manager.addAccount({
-        name: "k2",
-        apiKey: "sk-ant-key-2",
-      });
+      const a1 = await addTestAccount(manager, "k1");
+      const a2 = await addTestAccount(manager, "k2");
       manager.markInvalid(a1.id);
       const selected = manager.getNextAccount();
       expect(selected?.id).toBe(a2.id);
     });
 
     it("harus skip account disabled", async () => {
-      const a1 = await manager.addAccount({
-        name: "k1",
-        apiKey: "sk-ant-key-1",
-      });
-      const a2 = await manager.addAccount({
-        name: "k2",
-        apiKey: "sk-ant-key-2",
-      });
+      const a1 = await addTestAccount(manager, "k1");
+      const a2 = await addTestAccount(manager, "k2");
       await manager.disableAccount(a1.id);
       const selected = manager.getNextAccount();
       expect(selected?.id).toBe(a2.id);
     });
 
     it("harus round-robin dengan benar", async () => {
-      await manager.addAccount({ name: "k1", apiKey: "sk-ant-key-1" });
-      await manager.addAccount({ name: "k2", apiKey: "sk-ant-key-2" });
-      await manager.addAccount({ name: "k3", apiKey: "sk-ant-key-3" });
+      await addTestAccount(manager, "k1");
+      await addTestAccount(manager, "k2");
+      await addTestAccount(manager, "k3");
 
       const names = [];
       for (let i = 0; i < 6; i++) {
@@ -274,20 +289,14 @@ describe("AccountManager", () => {
 
   describe("markRateLimited()", () => {
     it("harus ubah status ke rate_limited", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.markRateLimited(account.id);
       const updated = manager.getAccount(account.id);
       expect(updated?.status).toBe("rate_limited");
     });
 
     it("harus set resetAt", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       const resetAt = Date.now() + 30000;
       manager.markRateLimited(account.id, resetAt);
       const updated = manager.getAccount(account.id);
@@ -295,10 +304,7 @@ describe("AccountManager", () => {
     });
 
     it("harus increment hit count", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.markRateLimited(account.id);
       manager.markRateLimited(account.id);
       const updated = manager.getAccount(account.id);
@@ -314,10 +320,7 @@ describe("AccountManager", () => {
     it("harus emit account:rate-limited event", async () => {
       const spy = vi.fn();
       manager.on("account:rate-limited", spy);
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.markRateLimited(account.id);
       expect(spy).toHaveBeenCalledOnce();
     });
@@ -325,10 +328,7 @@ describe("AccountManager", () => {
 
   describe("markSuccess()", () => {
     it("harus increment usage counters", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.markSuccess(account.id);
       manager.markSuccess(account.id);
       const updated = manager.getAccount(account.id);
@@ -337,20 +337,14 @@ describe("AccountManager", () => {
     });
 
     it("harus update lastUsedAt", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.markSuccess(account.id);
       const updated = manager.getAccount(account.id);
       expect(updated?.metadata.lastUsedAt).toBeGreaterThan(0);
     });
 
     it("harus reset consecutiveFailures", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.markFailed(account.id, new Error("err"));
       manager.markFailed(account.id, new Error("err"));
       manager.markSuccess(account.id);
@@ -361,10 +355,7 @@ describe("AccountManager", () => {
 
   describe("markFailed()", () => {
     it("harus increment failure counters", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.markFailed(account.id, new Error("err"));
       const updated = manager.getAccount(account.id);
       expect(updated?.usage.total).toBe(1);
@@ -373,10 +364,7 @@ describe("AccountManager", () => {
     });
 
     it("harus auto-invalidate setelah consecutive failures >= threshold", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       for (let i = 0; i < config.rateLimitMaxConsecutive; i++) {
         manager.markFailed(account.id, new Error("err"));
       }
@@ -393,19 +381,13 @@ describe("AccountManager", () => {
 
   describe("disableAccount() / enableAccount()", () => {
     it("harus disable account", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       await manager.disableAccount(account.id);
       expect(manager.getAccount(account.id)?.status).toBe("disabled");
     });
 
     it("harus enable account dan reset failures", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       await manager.disableAccount(account.id);
       await manager.enableAccount(account.id);
       const updated = manager.getAccount(account.id);
@@ -416,10 +398,7 @@ describe("AccountManager", () => {
 
   describe("resetRateLimit()", () => {
     it("harus reset rate limit dan set status active", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.markRateLimited(account.id);
       await manager.resetRateLimit(account.id);
       const updated = manager.getAccount(account.id);
@@ -430,15 +409,9 @@ describe("AccountManager", () => {
 
   describe("getPoolMetrics()", () => {
     it("harus return metrics yang akurat", async () => {
-      await manager.addAccount({ name: "k1", apiKey: "sk-ant-key-1" });
-      const a2 = await manager.addAccount({
-        name: "k2",
-        apiKey: "sk-ant-key-2",
-      });
-      const a3 = await manager.addAccount({
-        name: "k3",
-        apiKey: "sk-ant-key-3",
-      });
+      await addTestAccount(manager, "k1");
+      const a2 = await addTestAccount(manager, "k2");
+      const a3 = await addTestAccount(manager, "k3");
 
       manager.markRateLimited(a2.id);
       await manager.disableAccount(a3.id);
@@ -453,10 +426,7 @@ describe("AccountManager", () => {
 
   describe("updateAccount()", () => {
     it("harus update name, priority, weight", async () => {
-      const account = await manager.addAccount({
-        name: "old",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "old");
       const updated = await manager.updateAccount(account.id, {
         name: "new-name",
         priority: 99,
@@ -480,15 +450,12 @@ describe("AccountManager", () => {
     });
 
     it("harus return true saat ada account active", async () => {
-      await manager.addAccount({ name: "test", apiKey: "sk-ant-test" });
+      await addTestAccount(manager, "test");
       expect(manager.hasAvailableAccounts()).toBe(true);
     });
 
     it("harus return false saat semua disabled", async () => {
-      const a = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const a = await addTestAccount(manager, "test");
       await manager.disableAccount(a.id);
       expect(manager.hasAvailableAccounts()).toBe(false);
     });
@@ -496,10 +463,7 @@ describe("AccountManager", () => {
 
   describe("inFlight tracking", () => {
     it("harus increment dan decrement inFlight", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.incrementInFlight(account.id);
       manager.incrementInFlight(account.id);
       expect(manager.getAccount(account.id)?.inFlight).toBe(2);
@@ -508,12 +472,18 @@ describe("AccountManager", () => {
     });
 
     it("harus tidak go below 0", async () => {
-      const account = await manager.addAccount({
-        name: "test",
-        apiKey: "sk-ant-test",
-      });
+      const account = await addTestAccount(manager, "test");
       manager.decrementInFlight(account.id);
       expect(manager.getAccount(account.id)?.inFlight).toBe(0);
+    });
+  });
+
+  describe("sanitizeAccount()", () => {
+    it("harus mask oauth tokens di getAllAccounts", async () => {
+      await addTestAccount(manager, "test");
+      const accounts = manager.getAllAccounts();
+      expect(accounts[0].oauth.accessToken).toContain("...");
+      expect(accounts[0].oauth.refreshToken).toBe("***");
     });
   });
 });
