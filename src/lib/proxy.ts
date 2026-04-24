@@ -90,12 +90,16 @@ export class ProxyHandler {
       triedAccountIds.add(account.id);
       lastAccountId = account.id;
 
-      const decryptedKey = this.manager.getDecryptedKey(account);
+      if (this.manager.isTokenExpiring(account)) {
+        await this.manager.refreshAccountToken(account.id).catch(() => {});
+      }
+
+      const accessToken = this.manager.getAccessToken(account);
       this.manager.incrementInFlight(account.id);
 
       try {
         const targetUrl = `${this.config.claudeBaseUrl}${path}`;
-        const proxyHeaders = this.buildRequestHeaders(headers, decryptedKey);
+        const proxyHeaders = this.buildRequestHeaders(headers, accessToken);
 
         const controller = new AbortController();
         const timeout = setTimeout(
@@ -277,7 +281,7 @@ export class ProxyHandler {
 
   private buildRequestHeaders(
     original: Headers,
-    apiKey: string,
+    accessToken: string,
   ): Record<string, string> {
     const result: Record<string, string> = {};
 
@@ -287,7 +291,7 @@ export class ProxyHandler {
       }
     });
 
-    result["x-api-key"] = apiKey;
+    result["Authorization"] = `Bearer ${accessToken}`;
     result["anthropic-version"] = result["anthropic-version"] || "2023-06-01";
 
     if (!result["content-type"]) {
