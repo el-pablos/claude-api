@@ -7,10 +7,16 @@ export type PoolStrategy =
   | "priority"
   | "random";
 
+export interface OAuthTokenData {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+}
+
 export interface ApiKeyAccount {
   id: string;
   name: string;
-  apiKey: string;
+  oauth: OAuthTokenData;
   status: AccountStatus;
   usage: {
     total: number;
@@ -36,7 +42,8 @@ export interface ApiKeyAccount {
 
 export interface CreateAccountInput {
   name: string;
-  apiKey: string;
+  oauthCode: string;
+  state?: string;
   priority?: number;
   weight?: number;
 }
