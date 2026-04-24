@@ -131,7 +131,7 @@ export function createDashboardApiRoutes(
     const metrics = manager.getPoolMetrics();
     return c.json({
       status: "ok",
-      version: "1.0.0",
+      version: "1.1.0",
       uptime: process.uptime(),
       strategy: manager.getStrategy(),
       totalAccounts: metrics.total,

@@ -2,6 +2,9 @@ import type { AccountManager } from "./account-manager";
 import type { AppConfig, RequestLogEntry } from "./types";
 import { logger } from "./logger";
 import { recordRequest } from "./metrics";
+import { recordUsage } from "./usage-tracker";
+import { calculateCost, recordDailyCost } from "./cost-calculator";
+import { recordHistory } from "./request-history";
 import { isRateLimitError, isAuthError, parseRetryAfter } from "./retry";
 import { randomUUID } from "node:crypto";
 
@@ -194,7 +197,22 @@ export class ProxyHandler {
           attempts,
         );
 
-        const proxyResponse = this.buildResponse(response);
+        let proxyResponse: Response;
+        if (response.ok && path === "/v1/messages") {
+          const cloned = response.clone();
+          proxyResponse = this.buildResponse(response);
+          this.extractAndRecordUsage(
+            cloned,
+            account.id,
+            account.name,
+            responseTime,
+            method,
+            path,
+            response.status,
+          ).catch(() => {});
+        } else {
+          proxyResponse = this.buildResponse(response);
+        }
 
         this.manager.decrementInFlight(account.id);
 
@@ -294,6 +312,76 @@ export class ProxyHandler {
       statusText: upstream.statusText,
       headers,
     });
+  }
+
+  private async extractAndRecordUsage(
+    response: Response,
+    accountId: string,
+    accountName: string,
+    responseTime: number,
+    method: string,
+    path: string,
+    statusCode: number,
+  ): Promise<void> {
+    try {
+      const body = (await response.json()) as {
+        model?: string;
+        usage?: {
+          input_tokens?: number;
+          output_tokens?: number;
+          cache_read_input_tokens?: number;
+          cache_creation_input_tokens?: number;
+        };
+      };
+      const usage = body.usage;
+      if (!usage) return;
+
+      const model = body.model || "unknown";
+      const inputTokens = usage.input_tokens || 0;
+      const outputTokens = usage.output_tokens || 0;
+      const cacheReadTokens = usage.cache_read_input_tokens || 0;
+      const cacheWriteTokens = usage.cache_creation_input_tokens || 0;
+
+      const costBreakdown = calculateCost(
+        model,
+        inputTokens,
+        outputTokens,
+        cacheReadTokens,
+        cacheWriteTokens,
+      );
+
+      recordUsage({
+        timestamp: Date.now(),
+        accountId,
+        accountName,
+        model,
+        inputTokens,
+        outputTokens,
+        cacheReadTokens,
+        cacheWriteTokens,
+        cost: costBreakdown.totalCost,
+      });
+
+      const today = new Date().toISOString().slice(0, 10);
+      recordDailyCost(today, model, costBreakdown.totalCost);
+
+      recordHistory({
+        id: randomUUID(),
+        timestamp: Date.now(),
+        model,
+        method,
+        path,
+        statusCode,
+        responseTime,
+        accountId,
+        accountName,
+        inputTokens,
+        outputTokens,
+        cached: cacheReadTokens > 0,
+      });
+    } catch {
+      logger.debug("Failed to extract usage from response");
+    }
   }
 
   private getActiveCount(): number {

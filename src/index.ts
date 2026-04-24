@@ -15,6 +15,7 @@ import { createDashboardRoutes } from "./routes/dashboard";
 import { createLogStreamRoutes } from "./routes/log-stream";
 import { createHistoryApiRoutes } from "./routes/history-api";
 import { createNotificationsApiRoutes } from "./routes/notifications-api";
+import { createUsageApiRoutes } from "./routes/usage-api";
 import { addNotification } from "./lib/notification-center";
 import type { LogLevel } from "./lib/logger";
 import type { ApiKeyAccount } from "./lib/types";
@@ -77,12 +78,14 @@ async function main() {
   const logStreamRoutes = createLogStreamRoutes();
   const historyApiRoutes = createHistoryApiRoutes();
   const notificationsApiRoutes = createNotificationsApiRoutes();
+  const usageApiRoutes = createUsageApiRoutes();
 
   app.use("/api/*", apiAuth);
   app.route("/", dashboardApiRoutes);
   app.route("/", logStreamRoutes);
   app.route("/", historyApiRoutes);
   app.route("/", notificationsApiRoutes);
+  app.route("/", usageApiRoutes);
 
   const apiRoutes = createApiRoutes(proxy);
   app.route("/", apiRoutes);
