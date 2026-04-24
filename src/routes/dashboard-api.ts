@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { AccountManager } from "~/lib/account-manager";
 import type { AppConfig } from "~/lib/types";
 import { getRecentLogs } from "~/lib/metrics";
+import { startAuth, getPendingAuthCount } from "~/lib/oauth";
 
 export function createDashboardApiRoutes(
   manager: AccountManager,
@@ -28,15 +29,66 @@ export function createDashboardApiRoutes(
     return c.json({ status: "ok", account });
   });
 
-  app.post("/api/dashboard/accounts", async (c) => {
-    const body = await c.req.json();
-    const account = await manager.addAccount({
-      name: body.name,
-      apiKey: body.apiKey,
-      priority: body.priority,
-      weight: body.weight,
+  app.post("/api/dashboard/oauth/start", async (c) => {
+    const body = (await c.req.json()) as { name?: string };
+    const name = body.name?.trim();
+    if (!name) {
+      return c.json({ error: "Account name is required" }, 400);
+    }
+    const pending = startAuth(name);
+    return c.json({
+      status: "ok",
+      authorizeUrl: pending.authorizeUrl,
+      state: pending.challenge.state,
+      accountName: pending.accountName,
+      expiresIn: 600,
     });
-    return c.json({ status: "ok", account }, 201);
+  });
+
+  app.post("/api/dashboard/oauth/exchange", async (c) => {
+    const body = (await c.req.json()) as {
+      code?: string;
+      state?: string;
+      name?: string;
+      priority?: number;
+      weight?: number;
+    };
+
+    if (!body.code?.trim()) {
+      return c.json({ error: "OAuth authorization code is required" }, 400);
+    }
+
+    try {
+      const account = await manager.addAccount({
+        name: body.name || "Claude Account",
+        oauthCode: body.code.trim(),
+        state: body.state,
+        priority: body.priority,
+        weight: body.weight,
+      });
+      return c.json({ status: "ok", account }, 201);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to link account";
+      return c.json({ error: msg }, 400);
+    }
+  });
+
+  app.get("/api/dashboard/oauth/pending", (c) => {
+    return c.json({
+      status: "ok",
+      pendingCount: getPendingAuthCount(),
+    });
+  });
+
+  app.post("/api/dashboard/accounts/:id/refresh-token", async (c) => {
+    const id = c.req.param("id");
+    try {
+      await manager.refreshAccountToken(id);
+      return c.json({ status: "ok", message: "Token refreshed" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Refresh failed";
+      return c.json({ error: msg }, 400);
+    }
   });
 
   app.put("/api/dashboard/accounts/:id", async (c) => {
