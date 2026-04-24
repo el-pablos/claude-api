@@ -2,9 +2,9 @@ import { randomBytes, createHash } from "node:crypto";
 import { logger } from "./logger";
 
 const CLAUDE_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
-const CLAUDE_AUTHORIZE_URL = "https://claude.com/cai/oauth/authorize";
-const CLAUDE_TOKEN_URL = "https://claude.com/cai/oauth/token";
-const CLAUDE_REDIRECT_URI = "https://platform.claude.com/oauth/code/callback";
+const CLAUDE_AUTHORIZE_URL = "https://claude.ai/oauth/authorize";
+const CLAUDE_TOKEN_URL = "https://console.anthropic.com/v1/oauth/token";
+const CLAUDE_REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback";
 const CLAUDE_SCOPES = [
   "org:create_api_key",
   "user:profile",
@@ -134,16 +134,18 @@ export async function exchangeCodeForTokens(
 ): Promise<OAuthTokens> {
   logger.info("Exchanging OAuth code for tokens");
 
+  const params = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+    client_id: CLAUDE_CLIENT_ID,
+    code_verifier: codeVerifier,
+    redirect_uri: CLAUDE_REDIRECT_URI,
+  });
+
   const response = await fetch(CLAUDE_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "authorization_code",
-      code,
-      client_id: CLAUDE_CLIENT_ID,
-      code_verifier: codeVerifier,
-      redirect_uri: CLAUDE_REDIRECT_URI,
-    }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
   });
 
   if (!response.ok) {
@@ -177,14 +179,16 @@ export async function refreshAccessToken(
 ): Promise<OAuthTokens> {
   logger.info("Refreshing OAuth access token");
 
+  const params = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+    client_id: CLAUDE_CLIENT_ID,
+  });
+
   const response = await fetch(CLAUDE_TOKEN_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: CLAUDE_CLIENT_ID,
-    }),
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
   });
 
   if (!response.ok) {

@@ -80,13 +80,13 @@ async function main() {
   const notificationsApiRoutes = createNotificationsApiRoutes();
   const usageApiRoutes = createUsageApiRoutes();
 
-  app.use("/api/*", apiAuth);
   app.route("/", dashboardApiRoutes);
   app.route("/", logStreamRoutes);
   app.route("/", historyApiRoutes);
   app.route("/", notificationsApiRoutes);
   app.route("/", usageApiRoutes);
 
+  app.use("/v1/*", apiAuth);
   const apiRoutes = createApiRoutes(proxy);
   app.route("/", apiRoutes);
 

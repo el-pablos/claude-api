@@ -66,7 +66,7 @@ describe("oauth", () => {
     it("harus return URL dengan semua required params", () => {
       const challenge = createPKCEChallenge();
       const url = buildAuthorizeUrl(challenge);
-      expect(url).toContain("https://claude.com/cai/oauth/authorize?");
+      expect(url).toContain("https://claude.ai/oauth/authorize?");
       expect(url).toContain("client_id=");
       expect(url).toContain("response_type=code");
       expect(url).toContain("redirect_uri=");
@@ -87,7 +87,7 @@ describe("oauth", () => {
       const url = buildAuthorizeUrl(challenge);
       const parsed = new URL(url);
       expect(parsed.protocol).toBe("https:");
-      expect(parsed.hostname).toBe("claude.com");
+      expect(parsed.hostname).toBe("claude.ai");
       expect(parsed.searchParams.get("client_id")).toBe(getClientId());
     });
   });
@@ -96,7 +96,7 @@ describe("oauth", () => {
     it("harus create pending auth dan return data lengkap", () => {
       const result = startAuth("Test Account");
       expect(result.challenge).toBeDefined();
-      expect(result.authorizeUrl).toContain("https://claude.com");
+      expect(result.authorizeUrl).toContain("https://claude.ai");
       expect(result.accountName).toBe("Test Account");
       expect(result.createdAt).toBeLessThanOrEqual(Date.now());
     });
@@ -213,11 +213,11 @@ describe("oauth", () => {
       expect(mockFetch).toHaveBeenCalledOnce();
       const [url, opts] = mockFetch.mock.calls[0];
       expect(url).toContain("token");
-      const body = JSON.parse(opts.body);
-      expect(body.grant_type).toBe("authorization_code");
-      expect(body.code).toBe("mycode");
-      expect(body.code_verifier).toBe("myverifier");
-      expect(body.client_id).toBe(getClientId());
+      const body = new URLSearchParams(opts.body);
+      expect(body.get("grant_type")).toBe("authorization_code");
+      expect(body.get("code")).toBe("mycode");
+      expect(body.get("code_verifier")).toBe("myverifier");
+      expect(body.get("client_id")).toBe(getClientId());
     });
 
     it("harus throw error kalau response not ok", async () => {
@@ -312,10 +312,10 @@ describe("oauth", () => {
       });
 
       await refreshAccessToken("my_refresh_token");
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(body.grant_type).toBe("refresh_token");
-      expect(body.refresh_token).toBe("my_refresh_token");
-      expect(body.client_id).toBe(getClientId());
+      const body = new URLSearchParams(mockFetch.mock.calls[0][1].body);
+      expect(body.get("grant_type")).toBe("refresh_token");
+      expect(body.get("refresh_token")).toBe("my_refresh_token");
+      expect(body.get("client_id")).toBe(getClientId());
     });
 
     it("harus throw kalau refresh gagal", async () => {
