@@ -4,10 +4,11 @@ import type {
   ApiKeyAccount,
   AppConfig,
   CreateAccountInput,
+  OAuthTokenData,
   PoolMetrics,
   PoolState,
 } from "./types";
-import { encrypt, decrypt, maskApiKey } from "./crypto";
+import { encrypt, decrypt } from "./crypto";
 import { logger } from "./logger";
 import { getRequestsPerMinute, getAvgResponseTime } from "./metrics";
 import { selectAccount } from "./pool-strategy";
@@ -17,6 +18,14 @@ import {
   saveStateImmediate,
   createEmptyState,
 } from "./storage";
+import {
+  exchangeCodeForTokens,
+  refreshAccessToken,
+  isTokenExpiringSoon,
+  getLatestPendingAuth,
+  getPendingAuth,
+  removePendingAuth,
+} from "./oauth";
 
 export class AccountManager extends EventEmitter {
   private state: PoolState;
@@ -24,6 +33,7 @@ export class AccountManager extends EventEmitter {
   private recoveryInterval: ReturnType<typeof setInterval> | null = null;
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
   private persistInterval: ReturnType<typeof setInterval> | null = null;
+  private tokenRefreshInterval: ReturnType<typeof setInterval> | null = null;
   private initialized = false;
 
   constructor(config: AppConfig) {
@@ -47,6 +57,7 @@ export class AccountManager extends EventEmitter {
     this.startRateLimitRecoveryJob();
     this.startHealthCheckJob();
     this.startStatePersistenceJob();
+    this.startTokenRefreshJob();
 
     this.initialized = true;
     logger.info("AccountManager initialized", {
@@ -60,36 +71,52 @@ export class AccountManager extends EventEmitter {
     if (this.recoveryInterval) clearInterval(this.recoveryInterval);
     if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
     if (this.persistInterval) clearInterval(this.persistInterval);
+    if (this.tokenRefreshInterval) clearInterval(this.tokenRefreshInterval);
     this.recoveryInterval = null;
     this.healthCheckInterval = null;
     this.persistInterval = null;
+    this.tokenRefreshInterval = null;
     await saveStateImmediate(this.config.poolStateFile, this.state);
     logger.info("AccountManager shut down");
   }
 
   async addAccount(input: CreateAccountInput): Promise<ApiKeyAccount> {
-    if (!input.apiKey || input.apiKey.trim().length === 0) {
-      throw new Error("API key is required");
+    if (!input.oauthCode || input.oauthCode.trim().length === 0) {
+      throw new Error("OAuth authorization code is required");
     }
     if (!input.name || input.name.trim().length === 0) {
       throw new Error("Account name is required");
     }
 
-    const existing = this.state.accounts.find(
-      (a) => this.decryptKey(a.apiKey) === input.apiKey,
-    );
-    if (existing) {
-      throw new Error(`API key already exists in pool as "${existing.name}"`);
+    const pending = input.state
+      ? getPendingAuth(input.state)
+      : getLatestPendingAuth();
+
+    if (!pending) {
+      throw new Error(
+        "No pending OAuth session found. Generate a login URL first.",
+      );
     }
 
-    const encryptedKey = this.config.encryptionKey
-      ? encrypt(input.apiKey, this.config.encryptionKey)
-      : input.apiKey;
+    let tokens: OAuthTokenData;
+    try {
+      tokens = await exchangeCodeForTokens(
+        input.oauthCode.trim(),
+        pending.challenge.codeVerifier,
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Token exchange failed";
+      throw new Error(`OAuth login failed: ${msg}`);
+    }
+
+    removePendingAuth(pending.challenge.state);
+
+    const encryptedOAuth = this.encryptTokens(tokens);
 
     const account: ApiKeyAccount = {
       id: randomUUID(),
       name: input.name.trim(),
-      apiKey: encryptedKey,
+      oauth: encryptedOAuth,
       status: "active",
       usage: { total: 0, success: 0, failed: 0 },
       rateLimit: { hit: 0, resetAt: null },
@@ -106,7 +133,7 @@ export class AccountManager extends EventEmitter {
     this.state.accounts.push(account);
     this.persist();
 
-    logger.info("Account added to pool", {
+    logger.info("Account added via OAuth", {
       accountId: account.id,
       name: account.name,
     });
@@ -137,7 +164,6 @@ export class AccountManager extends EventEmitter {
     if (updates.priority !== undefined)
       account.metadata.priority = updates.priority;
     if (updates.weight !== undefined) account.metadata.weight = updates.weight;
-    account.metadata.lastUsedAt = account.metadata.lastUsedAt;
     this.persist();
     logger.info("Account updated", { accountId, updates });
     this.emit("account:updated", account);
@@ -157,8 +183,44 @@ export class AccountManager extends EventEmitter {
     return result.account;
   }
 
-  getDecryptedKey(account: ApiKeyAccount): string {
-    return this.decryptKey(account.apiKey);
+  getAccessToken(account: ApiKeyAccount): string {
+    const tokens = this.decryptTokens(account.oauth);
+    return tokens.accessToken;
+  }
+
+  async refreshAccountToken(accountId: string): Promise<void> {
+    const account = this.findAccount(accountId);
+    const tokens = this.decryptTokens(account.oauth);
+
+    if (!tokens.refreshToken) {
+      logger.warn("No refresh token available", {
+        accountId,
+        name: account.name,
+      });
+      return;
+    }
+
+    try {
+      const newTokens = await refreshAccessToken(tokens.refreshToken);
+      account.oauth = this.encryptTokens(newTokens);
+      this.persist();
+      logger.info("Token refreshed", { accountId, name: account.name });
+      this.emit("account:token-refreshed", account);
+    } catch (err) {
+      logger.error("Token refresh failed", {
+        accountId,
+        name: account.name,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      account.status = "invalid";
+      this.persist();
+      this.emit("account:invalid", account);
+    }
+  }
+
+  isTokenExpiring(account: ApiKeyAccount): boolean {
+    const tokens = this.decryptTokens(account.oauth);
+    return isTokenExpiringSoon(tokens.expiresAt);
   }
 
   markRateLimited(accountId: string, resetAt?: number): void {
@@ -196,7 +258,7 @@ export class AccountManager extends EventEmitter {
     this.persist();
   }
 
-  markFailed(accountId: string, error: Error): void {
+  markFailed(accountId: string, _error: Error): void {
     const account = this.findAccount(accountId);
     account.usage.total += 1;
     account.usage.failed += 1;
@@ -316,20 +378,48 @@ export class AccountManager extends EventEmitter {
     return account;
   }
 
-  private decryptKey(storedKey: string): string {
-    if (!this.config.encryptionKey) return storedKey;
-    if (!storedKey.includes(":")) return storedKey;
+  private encryptTokens(tokens: OAuthTokenData): OAuthTokenData {
+    if (!this.config.encryptionKey) return tokens;
+    return {
+      accessToken: encrypt(tokens.accessToken, this.config.encryptionKey),
+      refreshToken: tokens.refreshToken
+        ? encrypt(tokens.refreshToken, this.config.encryptionKey)
+        : "",
+      expiresAt: tokens.expiresAt,
+    };
+  }
+
+  private decryptTokens(oauth: OAuthTokenData): OAuthTokenData {
+    if (!this.config.encryptionKey) return oauth;
     try {
-      return decrypt(storedKey, this.config.encryptionKey);
+      return {
+        accessToken: oauth.accessToken.includes(":")
+          ? decrypt(oauth.accessToken, this.config.encryptionKey)
+          : oauth.accessToken,
+        refreshToken:
+          oauth.refreshToken && oauth.refreshToken.includes(":")
+            ? decrypt(oauth.refreshToken, this.config.encryptionKey)
+            : oauth.refreshToken,
+        expiresAt: oauth.expiresAt,
+      };
     } catch {
-      return storedKey;
+      return oauth;
     }
   }
 
   private sanitizeAccount(account: ApiKeyAccount): ApiKeyAccount {
+    const tokens = this.decryptTokens(account.oauth);
+    const masked =
+      tokens.accessToken.length > 12
+        ? tokens.accessToken.slice(0, 8) + "..." + tokens.accessToken.slice(-4)
+        : "***";
     return {
       ...account,
-      apiKey: maskApiKey(this.decryptKey(account.apiKey)),
+      oauth: {
+        accessToken: masked,
+        refreshToken: tokens.refreshToken ? "***" : "",
+        expiresAt: tokens.expiresAt,
+      },
     };
   }
 
@@ -373,5 +463,23 @@ export class AccountManager extends EventEmitter {
     this.persistInterval = setInterval(() => {
       this.persist();
     }, 10000);
+  }
+
+  private startTokenRefreshJob(): void {
+    this.tokenRefreshInterval = setInterval(async () => {
+      for (const account of this.state.accounts) {
+        if (account.status !== "active" && account.status !== "rate_limited")
+          continue;
+        try {
+          if (this.isTokenExpiring(account)) {
+            await this.refreshAccountToken(account.id);
+          }
+        } catch {
+          logger.debug("Token refresh check failed for account", {
+            accountId: account.id,
+          });
+        }
+      }
+    }, 30_000);
   }
 }
