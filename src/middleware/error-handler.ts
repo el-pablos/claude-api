@@ -1,7 +1,10 @@
 import type { Context, Next } from "hono";
 import { logger } from "~/lib/logger";
 
-export async function errorHandler(c: Context, next: Next): Promise<void> {
+export async function errorHandler(
+  c: Context,
+  next: Next,
+): Promise<Response | void> {
   try {
     await next();
   } catch (err) {

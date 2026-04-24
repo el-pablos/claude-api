@@ -1,8 +1,14 @@
 import { Hono } from "hono";
 import type { ProxyHandler } from "~/lib/proxy";
 
-export function createApiRoutes(proxy: ProxyHandler): Hono {
-  const app = new Hono();
+type AppEnv = {
+  Variables: {
+    requestId: string;
+  };
+};
+
+export function createApiRoutes(proxy: ProxyHandler): Hono<AppEnv> {
+  const app = new Hono<AppEnv>();
 
   app.post("/v1/messages", async (c) => {
     const body = await c.req.arrayBuffer();

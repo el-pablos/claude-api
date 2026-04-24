@@ -49,6 +49,10 @@ export function decrypt(ciphertext: string, encryptionKey: string): string {
   const tag = Buffer.from(parts[2], "hex");
   const encrypted = parts[3];
 
+  if (tag.length !== TAG_LENGTH) {
+    throw new Error("Invalid encrypted data tag length");
+  }
+
   const key = deriveKey(encryptionKey, salt);
   const decipher = createDecipheriv(ALGORITHM, key, iv);
   decipher.setAuthTag(tag);

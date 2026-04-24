@@ -14,6 +14,8 @@ export interface ProxyResult {
   attempts: number;
 }
 
+type FetchBody = NonNullable<Parameters<typeof fetch>[1]>["body"];
+
 const STRIP_REQUEST_HEADERS = new Set([
   "host",
   "connection",
@@ -23,6 +25,22 @@ const STRIP_REQUEST_HEADERS = new Set([
 ]);
 
 const STRIP_RESPONSE_HEADERS = new Set(["transfer-encoding", "connection"]);
+
+const DEFAULT_ANTHROPIC_BETAS = [
+  "oauth-2025-04-20",
+  "claude-code-20250219",
+];
+
+function mergeAnthropicBeta(existing?: string): string {
+  const values = new Set(
+    (existing || "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  );
+  for (const beta of DEFAULT_ANTHROPIC_BETAS) values.add(beta);
+  return Array.from(values).join(",");
+}
 
 export class ProxyHandler {
   private manager: AccountManager;
@@ -107,7 +125,7 @@ export class ProxyHandler {
           this.config.claudeApiTimeout,
         );
 
-        let fetchBody: BodyInit | null = null;
+        let fetchBody: FetchBody = null;
         if (body instanceof ReadableStream) {
           const reader = body.getReader();
           const chunks: Uint8Array[] = [];
@@ -134,7 +152,6 @@ export class ProxyHandler {
           headers: proxyHeaders,
           body: fetchBody,
           signal: controller.signal,
-          // @ts-expect-error duplex needed for streaming request bodies
           duplex: "half",
         });
 
@@ -293,6 +310,7 @@ export class ProxyHandler {
 
     result["Authorization"] = `Bearer ${accessToken}`;
     result["anthropic-version"] = result["anthropic-version"] || "2023-06-01";
+    result["anthropic-beta"] = mergeAnthropicBeta(result["anthropic-beta"]);
 
     if (!result["content-type"]) {
       result["content-type"] = "application/json";

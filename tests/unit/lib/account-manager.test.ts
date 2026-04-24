@@ -40,6 +40,17 @@ vi.mock("~/lib/oauth", () => {
       refreshToken: `refresh-token-${Date.now()}`,
       expiresAt: Date.now() + 3600_000,
     })),
+    parseAuthorizationCode: vi.fn((input: string) => {
+      const trimmed = input.trim();
+      const hashIndex = trimmed.indexOf("#");
+      if (hashIndex >= 0) {
+        return {
+          code: trimmed.slice(0, hashIndex),
+          state: trimmed.slice(hashIndex + 1),
+        };
+      }
+      return { code: trimmed };
+    }),
     refreshAccessToken: vi.fn(async () => ({
       accessToken: `refreshed-token-${Date.now()}`,
       refreshToken: `refresh-token-${Date.now()}`,
@@ -74,7 +85,7 @@ function makeConfig(overrides: Partial<AppConfig> = {}): AppConfig {
   };
 }
 
-import { startAuth } from "~/lib/oauth";
+import { startAuth, exchangeCodeForTokens } from "~/lib/oauth";
 
 async function addTestAccount(
   manager: AccountManager,
@@ -213,6 +224,20 @@ describe("AccountManager", () => {
       manager.on("account:added", spy);
       await addTestAccount(manager, "test");
       expect(spy).toHaveBeenCalledOnce();
+    });
+
+    it("harus support pasted code#state dari halaman callback", async () => {
+      const pending = startAuth("test");
+      await manager.addAccount({
+        name: "test",
+        oauthCode: `code-123#${pending.challenge.state}`,
+      });
+
+      expect(exchangeCodeForTokens).toHaveBeenLastCalledWith(
+        "code-123",
+        pending.challenge.codeVerifier,
+        pending.challenge.state,
+      );
     });
   });
 

@@ -22,6 +22,7 @@ import {
   exchangeCodeForTokens,
   refreshAccessToken,
   isTokenExpiringSoon,
+  parseAuthorizationCode,
   getLatestPendingAuth,
   getPendingAuth,
   removePendingAuth,
@@ -88,8 +89,18 @@ export class AccountManager extends EventEmitter {
       throw new Error("Account name is required");
     }
 
-    const pending = input.state
-      ? getPendingAuth(input.state)
+    const parsedCode = parseAuthorizationCode(input.oauthCode);
+    if (
+      input.state &&
+      parsedCode.state &&
+      input.state !== parsedCode.state
+    ) {
+      throw new Error("OAuth state mismatch. Generate a new login URL.");
+    }
+
+    const requestedState = parsedCode.state || input.state;
+    const pending = requestedState
+      ? getPendingAuth(requestedState)
       : getLatestPendingAuth();
 
     if (!pending) {
@@ -101,8 +112,9 @@ export class AccountManager extends EventEmitter {
     let tokens: OAuthTokenData;
     try {
       tokens = await exchangeCodeForTokens(
-        input.oauthCode.trim(),
+        parsedCode.code,
         pending.challenge.codeVerifier,
+        parsedCode.state || pending.challenge.state,
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Token exchange failed";

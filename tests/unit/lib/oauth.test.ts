@@ -10,6 +10,7 @@ import {
   exchangeCodeForTokens,
   refreshAccessToken,
   isTokenExpiringSoon,
+  parseAuthorizationCode,
   getClientId,
   getScopes,
 } from "~/lib/oauth";
@@ -66,7 +67,7 @@ describe("oauth", () => {
     it("harus return URL dengan semua required params", () => {
       const challenge = createPKCEChallenge();
       const url = buildAuthorizeUrl(challenge);
-      expect(url).toContain("https://claude.ai/oauth/authorize?");
+      expect(url).toContain("https://claude.com/cai/oauth/authorize?");
       expect(url).toContain("client_id=");
       expect(url).toContain("response_type=code");
       expect(url).toContain("redirect_uri=");
@@ -76,7 +77,7 @@ describe("oauth", () => {
       expect(url).toContain(`state=${challenge.state}`);
     });
 
-    it("harus include code=true param", () => {
+    it("harus include code=true param sesuai Claude Code", () => {
       const challenge = createPKCEChallenge();
       const url = buildAuthorizeUrl(challenge);
       expect(url).toContain("code=true");
@@ -87,8 +88,33 @@ describe("oauth", () => {
       const url = buildAuthorizeUrl(challenge);
       const parsed = new URL(url);
       expect(parsed.protocol).toBe("https:");
-      expect(parsed.hostname).toBe("claude.ai");
+      expect(parsed.hostname).toBe("claude.com");
       expect(parsed.searchParams.get("client_id")).toBe(getClientId());
+      expect(parsed.searchParams.get("redirect_uri")).toBe(
+        "https://platform.claude.com/oauth/code/callback",
+      );
+    });
+  });
+
+  describe("parseAuthorizationCode()", () => {
+    it("harus parse pasted code#state dari halaman Claude Code", () => {
+      expect(parseAuthorizationCode("abc123#state456")).toEqual({
+        code: "abc123",
+        state: "state456",
+      });
+    });
+
+    it("harus parse callback URL penuh", () => {
+      const parsed = parseAuthorizationCode(
+        "https://platform.claude.com/oauth/code/callback?code=abc123&state=state456",
+      );
+      expect(parsed).toEqual({ code: "abc123", state: "state456" });
+    });
+
+    it("harus trim quotes, prefix, dan whitespace", () => {
+      expect(parseAuthorizationCode('"code: abc 123"')).toEqual({
+        code: "abc123",
+      });
     });
   });
 
@@ -96,7 +122,9 @@ describe("oauth", () => {
     it("harus create pending auth dan return data lengkap", () => {
       const result = startAuth("Test Account");
       expect(result.challenge).toBeDefined();
-      expect(result.authorizeUrl).toContain("https://claude.ai");
+      expect(result.authorizeUrl).toContain(
+        "https://claude.com/cai/oauth/authorize",
+      );
       expect(result.accountName).toBe("Test Account");
       expect(result.createdAt).toBeLessThanOrEqual(Date.now());
     });
@@ -209,15 +237,23 @@ describe("oauth", () => {
         }),
       });
 
-      await exchangeCodeForTokens("mycode", "myverifier");
+      await exchangeCodeForTokens("mycode", "myverifier", "mystate");
       expect(mockFetch).toHaveBeenCalledOnce();
       const [url, opts] = mockFetch.mock.calls[0];
       expect(url).toContain("token");
-      const body = new URLSearchParams(opts.body);
-      expect(body.get("grant_type")).toBe("authorization_code");
-      expect(body.get("code")).toBe("mycode");
-      expect(body.get("code_verifier")).toBe("myverifier");
-      expect(body.get("client_id")).toBe(getClientId());
+      expect(url).toContain("platform.claude.com");
+      expect(opts.headers["Content-Type"]).toBe("application/json");
+      expect(opts.headers["User-Agent"]).toBe("anthropic");
+      expect(opts.headers["anthropic-beta"]).toBe("oauth-2025-04-20");
+      const body = JSON.parse(opts.body);
+      expect(body.grant_type).toBe("authorization_code");
+      expect(body.code).toBe("mycode");
+      expect(body.code_verifier).toBe("myverifier");
+      expect(body.client_id).toBe(getClientId());
+      expect(body.redirect_uri).toBe(
+        "https://platform.claude.com/oauth/code/callback",
+      );
+      expect(body.state).toBe("mystate");
     });
 
     it("harus throw error kalau response not ok", async () => {
@@ -312,10 +348,17 @@ describe("oauth", () => {
       });
 
       await refreshAccessToken("my_refresh_token");
-      const body = new URLSearchParams(mockFetch.mock.calls[0][1].body);
-      expect(body.get("grant_type")).toBe("refresh_token");
-      expect(body.get("refresh_token")).toBe("my_refresh_token");
-      expect(body.get("client_id")).toBe(getClientId());
+      expect(mockFetch.mock.calls[0][0]).toContain("platform.claude.com");
+      expect(mockFetch.mock.calls[0][1].headers["Content-Type"]).toBe(
+        "application/json",
+      );
+      expect(mockFetch.mock.calls[0][1].headers["User-Agent"]).toBe(
+        "anthropic",
+      );
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.grant_type).toBe("refresh_token");
+      expect(body.refresh_token).toBe("my_refresh_token");
+      expect(body.client_id).toBe(getClientId());
     });
 
     it("harus throw kalau refresh gagal", async () => {
