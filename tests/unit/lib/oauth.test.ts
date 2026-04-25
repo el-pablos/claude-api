@@ -67,7 +67,7 @@ describe("oauth", () => {
     it("harus return URL dengan semua required params", () => {
       const challenge = createPKCEChallenge();
       const url = buildAuthorizeUrl(challenge);
-      expect(url).toContain("https://claude.com/cai/oauth/authorize?");
+      expect(url).toContain("https://claude.ai/oauth/authorize?");
       expect(url).toContain("client_id=");
       expect(url).toContain("response_type=code");
       expect(url).toContain("redirect_uri=");
@@ -77,10 +77,19 @@ describe("oauth", () => {
       expect(url).toContain(`state=${challenge.state}`);
     });
 
-    it("harus include code=true param sesuai Claude Code", () => {
+    it("harus include code=true param untuk copy-paste mode", () => {
       const challenge = createPKCEChallenge();
       const url = buildAuthorizeUrl(challenge);
       expect(url).toContain("code=true");
+    });
+
+    it("harus encode scope pakai %20 bukan +", () => {
+      const challenge = createPKCEChallenge();
+      const url = buildAuthorizeUrl(challenge);
+      expect(url).toContain(
+        "scope=org%3Acreate_api_key%20user%3Aprofile%20user%3Ainference",
+      );
+      expect(url).not.toMatch(/scope=[^&]*\+/);
     });
 
     it("harus parseable sebagai valid URL", () => {
@@ -88,10 +97,10 @@ describe("oauth", () => {
       const url = buildAuthorizeUrl(challenge);
       const parsed = new URL(url);
       expect(parsed.protocol).toBe("https:");
-      expect(parsed.hostname).toBe("claude.com");
+      expect(parsed.hostname).toBe("claude.ai");
       expect(parsed.searchParams.get("client_id")).toBe(getClientId());
       expect(parsed.searchParams.get("redirect_uri")).toBe(
-        "https://platform.claude.com/oauth/code/callback",
+        "https://console.anthropic.com/oauth/code/callback",
       );
     });
   });
@@ -123,7 +132,7 @@ describe("oauth", () => {
       const result = startAuth("Test Account");
       expect(result.challenge).toBeDefined();
       expect(result.authorizeUrl).toContain(
-        "https://claude.com/cai/oauth/authorize",
+        "https://claude.ai/oauth/authorize",
       );
       expect(result.accountName).toBe("Test Account");
       expect(result.createdAt).toBeLessThanOrEqual(Date.now());
@@ -240,18 +249,15 @@ describe("oauth", () => {
       await exchangeCodeForTokens("mycode", "myverifier", "mystate");
       expect(mockFetch).toHaveBeenCalledOnce();
       const [url, opts] = mockFetch.mock.calls[0];
-      expect(url).toContain("token");
-      expect(url).toContain("platform.claude.com");
+      expect(url).toContain("console.anthropic.com/v1/oauth/token");
       expect(opts.headers["Content-Type"]).toBe("application/json");
-      expect(opts.headers["User-Agent"]).toBe("anthropic");
-      expect(opts.headers["anthropic-beta"]).toBe("oauth-2025-04-20");
       const body = JSON.parse(opts.body);
       expect(body.grant_type).toBe("authorization_code");
       expect(body.code).toBe("mycode");
       expect(body.code_verifier).toBe("myverifier");
       expect(body.client_id).toBe(getClientId());
       expect(body.redirect_uri).toBe(
-        "https://platform.claude.com/oauth/code/callback",
+        "https://console.anthropic.com/oauth/code/callback",
       );
       expect(body.state).toBe("mystate");
     });
@@ -348,12 +354,11 @@ describe("oauth", () => {
       });
 
       await refreshAccessToken("my_refresh_token");
-      expect(mockFetch.mock.calls[0][0]).toContain("platform.claude.com");
+      expect(mockFetch.mock.calls[0][0]).toContain(
+        "console.anthropic.com/v1/oauth/token",
+      );
       expect(mockFetch.mock.calls[0][1].headers["Content-Type"]).toBe(
         "application/json",
-      );
-      expect(mockFetch.mock.calls[0][1].headers["User-Agent"]).toBe(
-        "anthropic",
       );
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.grant_type).toBe("refresh_token");

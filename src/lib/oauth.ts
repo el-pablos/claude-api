@@ -2,17 +2,13 @@ import { randomBytes, createHash } from "node:crypto";
 import { logger } from "./logger";
 
 const CLAUDE_CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e";
-const CLAUDE_AUTHORIZE_URL = "https://claude.com/cai/oauth/authorize";
-const CLAUDE_TOKEN_URL = "https://platform.claude.com/v1/oauth/token";
-const CLAUDE_REDIRECT_URI = "https://platform.claude.com/oauth/code/callback";
-const CLAUDE_OAUTH_BETA = "oauth-2025-04-20";
+const CLAUDE_AUTHORIZE_URL = "https://claude.ai/oauth/authorize";
+const CLAUDE_TOKEN_URL = "https://console.anthropic.com/v1/oauth/token";
+const CLAUDE_REDIRECT_URI = "https://console.anthropic.com/oauth/code/callback";
 const CLAUDE_SCOPES = [
   "org:create_api_key",
   "user:profile",
   "user:inference",
-  "user:sessions:claude_code",
-  "user:mcp_servers",
-  "user:file_upload",
 ].join(" ");
 
 export interface PKCEChallenge {
@@ -64,17 +60,18 @@ export function createPKCEChallenge(): PKCEChallenge {
 }
 
 export function buildAuthorizeUrl(challenge: PKCEChallenge): string {
-  const params = new URLSearchParams({
-    code: "true",
-    client_id: CLAUDE_CLIENT_ID,
-    response_type: "code",
-    redirect_uri: CLAUDE_REDIRECT_URI,
-    scope: CLAUDE_SCOPES,
-    code_challenge: challenge.codeChallenge,
-    code_challenge_method: "S256",
-    state: challenge.state,
-  });
-  return `${CLAUDE_AUTHORIZE_URL}?${params.toString()}`;
+  const p = (k: string, v: string) => `${k}=${encodeURIComponent(v)}`;
+  const query = [
+    p("code", "true"),
+    p("client_id", CLAUDE_CLIENT_ID),
+    p("response_type", "code"),
+    p("redirect_uri", CLAUDE_REDIRECT_URI),
+    p("scope", CLAUDE_SCOPES),
+    p("code_challenge", challenge.codeChallenge),
+    p("code_challenge_method", "S256"),
+    p("state", challenge.state),
+  ].join("&");
+  return `${CLAUDE_AUTHORIZE_URL}?${query}`;
 }
 
 function splitCodeAndState(
@@ -96,7 +93,10 @@ function splitCodeAndState(
 }
 
 export function parseAuthorizationCode(input: string): ParsedAuthorizationCode {
-  let value = input.trim().replace(/^["'`]+|["'`]+$/g, "").trim();
+  let value = input
+    .trim()
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .trim();
   if (!value) {
     throw new Error("OAuth authorization code is required");
   }
@@ -105,7 +105,10 @@ export function parseAuthorizationCode(input: string): ParsedAuthorizationCode {
     const url = new URL(value);
     const code = url.searchParams.get("code");
     if (code) {
-      return splitCodeAndState(code, url.searchParams.get("state") ?? undefined);
+      return splitCodeAndState(
+        code,
+        url.searchParams.get("state") ?? undefined,
+      );
     }
   } catch {
     // Not a URL; continue with pasted code formats below.
@@ -190,11 +193,7 @@ export async function exchangeCodeForTokens(
 
   const response = await fetch(CLAUDE_TOKEN_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "User-Agent": "anthropic",
-      "anthropic-beta": CLAUDE_OAUTH_BETA,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
@@ -231,11 +230,7 @@ export async function refreshAccessToken(
 
   const response = await fetch(CLAUDE_TOKEN_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "User-Agent": "anthropic",
-      "anthropic-beta": CLAUDE_OAUTH_BETA,
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
