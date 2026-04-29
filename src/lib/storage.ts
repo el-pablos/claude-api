@@ -63,7 +63,12 @@ export async function saveStateImmediate(
     await fsp.mkdir(dir, { recursive: true });
   }
   const json = JSON.stringify(state, null, 2);
-  await fsp.writeFile(filePath, json, "utf-8");
+  // Atomic write: tulis ke .tmp dulu lalu rename. Tujuan-nya supaya kalau
+  // crash di tengah write, file utama tidak korup (rename adalah operasi
+  // atomik di filesystem POSIX & NTFS).
+  const tmpPath = `${filePath}.tmp`;
+  await fsp.writeFile(tmpPath, json, "utf-8");
+  await fsp.rename(tmpPath, filePath);
   logger.debug("Pool state saved", { path: filePath });
 }
 

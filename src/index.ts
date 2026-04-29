@@ -62,8 +62,8 @@ async function main() {
   const app = new Hono();
 
   app.use("*", cors());
-  app.use("*", errorHandler);
   app.use("*", loggerMiddleware);
+  app.onError(errorHandler);
 
   const healthRoutes = createHealthRoutes(manager);
   app.route("/", healthRoutes);
@@ -71,6 +71,7 @@ async function main() {
   const dashboardAuth = createDashboardAuth(config);
   const dashboardRoutes = createDashboardRoutes();
   app.use("/dashboard/*", dashboardAuth);
+  app.use("/api/dashboard/*", dashboardAuth);
   app.route("/", dashboardRoutes);
 
   const apiAuth = createAuthMiddleware(config);
@@ -103,18 +104,31 @@ async function main() {
     },
   );
 
-  const shutdown = async (signal: string) => {
+  let shuttingDown = false;
+  const shutdown = async (signal: string, exitCode: number = 0) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
     logger.info(`Received ${signal}, shutting down gracefully...`);
-    await manager.shutdown();
-    server.close();
-    process.exit(0);
+    try {
+      await manager.shutdown();
+    } catch (err) {
+      logger.error("Error during AccountManager shutdown", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+      // safety net 5s in case ada koneksi hang (SSE keep-alive misal)
+      setTimeout(() => resolve(), 5000).unref();
+    });
+    process.exit(exitCode);
   };
 
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));
   process.on("uncaughtException", (err) => {
-    logger.error("Uncaught exception", { error: err.message });
-    shutdown("uncaughtException");
+    logger.error("Uncaught exception", { error: err.message, stack: err.stack });
+    shutdown("uncaughtException", 1);
   });
   process.on("unhandledRejection", (reason) => {
     logger.error("Unhandled rejection", {

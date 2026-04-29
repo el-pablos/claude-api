@@ -7,6 +7,7 @@ import type {
   OAuthTokenData,
   PoolMetrics,
   PoolState,
+  PoolStrategy,
 } from "./types";
 import { encrypt, decrypt } from "./crypto";
 import { logger } from "./logger";
@@ -33,7 +34,6 @@ export class AccountManager extends EventEmitter {
   private config: AppConfig;
   private recoveryInterval: ReturnType<typeof setInterval> | null = null;
   private healthCheckInterval: ReturnType<typeof setInterval> | null = null;
-  private persistInterval: ReturnType<typeof setInterval> | null = null;
   private tokenRefreshInterval: ReturnType<typeof setInterval> | null = null;
   private initialized = false;
 
@@ -57,7 +57,6 @@ export class AccountManager extends EventEmitter {
 
     this.startRateLimitRecoveryJob();
     this.startHealthCheckJob();
-    this.startStatePersistenceJob();
     this.startTokenRefreshJob();
 
     this.initialized = true;
@@ -71,11 +70,9 @@ export class AccountManager extends EventEmitter {
   async shutdown(): Promise<void> {
     if (this.recoveryInterval) clearInterval(this.recoveryInterval);
     if (this.healthCheckInterval) clearInterval(this.healthCheckInterval);
-    if (this.persistInterval) clearInterval(this.persistInterval);
     if (this.tokenRefreshInterval) clearInterval(this.tokenRefreshInterval);
     this.recoveryInterval = null;
     this.healthCheckInterval = null;
-    this.persistInterval = null;
     this.tokenRefreshInterval = null;
     await saveStateImmediate(this.config.poolStateFile, this.state);
     logger.info("AccountManager shut down");
@@ -374,8 +371,21 @@ export class AccountManager extends EventEmitter {
   }
 
   setStrategy(strategy: string): void {
-    this.state.config.strategy = strategy as PoolState["config"]["strategy"];
+    const valid: PoolStrategy[] = [
+      "round-robin",
+      "weighted",
+      "least-used",
+      "priority",
+      "random",
+    ];
+    if (!valid.includes(strategy as PoolStrategy)) {
+      throw new Error(
+        `Invalid pool strategy: ${strategy}. Valid options: ${valid.join(", ")}`,
+      );
+    }
+    this.state.config.strategy = strategy as PoolStrategy;
     this.persist();
+    logger.info("Pool strategy updated", { strategy });
   }
 
   getState(): PoolState {
@@ -414,7 +424,13 @@ export class AccountManager extends EventEmitter {
             : oauth.refreshToken,
         expiresAt: oauth.expiresAt,
       };
-    } catch {
+    } catch (err) {
+      logger.error(
+        "Failed to decrypt OAuth tokens. ENCRYPTION_KEY mungkin berubah dari saat token disimpan. Akun perlu di-relink via OAuth.",
+        {
+          error: err instanceof Error ? err.message : String(err),
+        },
+      );
       return oauth;
     }
   }
@@ -442,6 +458,7 @@ export class AccountManager extends EventEmitter {
   private startRateLimitRecoveryJob(): void {
     this.recoveryInterval = setInterval(() => {
       const now = Date.now();
+      let changed = false;
       for (const account of this.state.accounts) {
         if (
           account.status === "rate_limited" &&
@@ -450,6 +467,7 @@ export class AccountManager extends EventEmitter {
         ) {
           account.status = "active";
           account.rateLimit.resetAt = null;
+          changed = true;
           logger.info("Account auto-recovered from rate limit", {
             accountId: account.id,
             name: account.name,
@@ -457,7 +475,7 @@ export class AccountManager extends EventEmitter {
           this.emit("account:recovered", account);
         }
       }
-      this.persist();
+      if (changed) this.persist();
     }, 5000);
   }
 
@@ -469,12 +487,6 @@ export class AccountManager extends EventEmitter {
         }
       }
     }, this.config.poolHealthCheckInterval);
-  }
-
-  private startStatePersistenceJob(): void {
-    this.persistInterval = setInterval(() => {
-      this.persist();
-    }, 10000);
   }
 
   private startTokenRefreshJob(): void {

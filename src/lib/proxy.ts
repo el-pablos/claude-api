@@ -220,17 +220,38 @@ export class ProxyHandler {
 
         let proxyResponse: Response;
         if (response.ok && path === "/v1/messages") {
-          const cloned = response.clone();
-          proxyResponse = this.buildResponse(response);
-          this.extractAndRecordUsage(
-            cloned,
-            account.id,
-            account.name,
-            responseTime,
-            method,
-            path,
-            response.status,
-          ).catch(() => {});
+          const contentType = response.headers.get("content-type") || "";
+          if (contentType.includes("text/event-stream") && response.body) {
+            // SSE streaming response: tap stream pakai TransformStream supaya
+            // kita bisa observe chunks (parse usage dari message_start &
+            // message_delta) tanpa block forwarding ke client.
+            const observed = this.tapSseStreamForUsage(
+              response.body,
+              account.id,
+              account.name,
+              responseTime,
+              method,
+              path,
+              response.status,
+            );
+            proxyResponse = new Response(observed, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: this.buildResponseHeaders(response),
+            });
+          } else {
+            const cloned = response.clone();
+            proxyResponse = this.buildResponse(response);
+            this.extractAndRecordUsage(
+              cloned,
+              account.id,
+              account.name,
+              responseTime,
+              method,
+              path,
+              response.status,
+            ).catch(() => {});
+          }
         } else {
           proxyResponse = this.buildResponse(response);
         }
@@ -319,21 +340,164 @@ export class ProxyHandler {
     return result;
   }
 
-  private buildResponse(upstream: Response): Response {
+  private buildResponseHeaders(upstream: Response): Headers {
     const headers = new Headers();
     upstream.headers.forEach((value, key) => {
       if (!STRIP_RESPONSE_HEADERS.has(key.toLowerCase())) {
         headers.set(key, value);
       }
     });
-
     headers.set("x-proxy", "claude-api");
+    return headers;
+  }
 
+  private buildResponse(upstream: Response): Response {
     return new Response(upstream.body, {
       status: upstream.status,
       statusText: upstream.statusText,
-      headers,
+      headers: this.buildResponseHeaders(upstream),
     });
+  }
+
+  private tapSseStreamForUsage(
+    upstream: ReadableStream<Uint8Array>,
+    accountId: string,
+    accountName: string,
+    responseTime: number,
+    method: string,
+    path: string,
+    statusCode: number,
+  ): ReadableStream<Uint8Array> {
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    let model = "unknown";
+    let inputTokens = 0;
+    let outputTokens = 0;
+    let cacheReadTokens = 0;
+    let cacheWriteTokens = 0;
+    let recorded = false;
+
+    const flush = () => {
+      if (recorded) return;
+      recorded = true;
+      try {
+        const costBreakdown = calculateCost(
+          model,
+          inputTokens,
+          outputTokens,
+          cacheReadTokens,
+          cacheWriteTokens,
+        );
+        recordUsage({
+          timestamp: Date.now(),
+          accountId,
+          accountName,
+          model,
+          inputTokens,
+          outputTokens,
+          cacheReadTokens,
+          cacheWriteTokens,
+          cost: costBreakdown.totalCost,
+        });
+        const today = new Date().toISOString().slice(0, 10);
+        recordDailyCost(today, model, costBreakdown.totalCost);
+        recordHistory({
+          id: randomUUID(),
+          timestamp: Date.now(),
+          model,
+          method,
+          path,
+          statusCode,
+          responseTime,
+          accountId,
+          accountName,
+          inputTokens,
+          outputTokens,
+          cached: cacheReadTokens > 0,
+        });
+      } catch {
+        logger.debug("Failed to record SSE usage");
+      }
+    };
+
+    const processSseEvent = (raw: string): void => {
+      // SSE event format: lines of "field: value" separated by \n,
+      // events di-pisah \n\n. Kita hanya butuh "data:" lines yang
+      // berisi JSON Anthropic payload.
+      const dataLines: string[] = [];
+      for (const line of raw.split("\n")) {
+        if (line.startsWith("data:")) {
+          dataLines.push(line.slice(5).trimStart());
+        }
+      }
+      if (dataLines.length === 0) return;
+      const dataStr = dataLines.join("\n");
+      if (!dataStr || dataStr === "[DONE]") return;
+      try {
+        const payload = JSON.parse(dataStr) as {
+          type?: string;
+          message?: {
+            model?: string;
+            usage?: {
+              input_tokens?: number;
+              output_tokens?: number;
+              cache_read_input_tokens?: number;
+              cache_creation_input_tokens?: number;
+            };
+          };
+          usage?: {
+            input_tokens?: number;
+            output_tokens?: number;
+            cache_read_input_tokens?: number;
+            cache_creation_input_tokens?: number;
+          };
+        };
+        if (payload.type === "message_start" && payload.message) {
+          if (payload.message.model) model = payload.message.model;
+          const u = payload.message.usage;
+          if (u) {
+            if (typeof u.input_tokens === "number") inputTokens = u.input_tokens;
+            if (typeof u.cache_read_input_tokens === "number")
+              cacheReadTokens = u.cache_read_input_tokens;
+            if (typeof u.cache_creation_input_tokens === "number")
+              cacheWriteTokens = u.cache_creation_input_tokens;
+            if (typeof u.output_tokens === "number")
+              outputTokens = u.output_tokens;
+          }
+        } else if (payload.type === "message_delta" && payload.usage) {
+          if (typeof payload.usage.output_tokens === "number") {
+            outputTokens = payload.usage.output_tokens;
+          }
+        }
+      } catch {
+        // ignore JSON parse error pada chunk yang tidak lengkap
+      }
+    };
+
+    return upstream.pipeThrough(
+      new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+          buffer += decoder.decode(chunk, { stream: true });
+          let sepIdx = buffer.indexOf("\n\n");
+          while (sepIdx !== -1) {
+            const event = buffer.slice(0, sepIdx);
+            buffer = buffer.slice(sepIdx + 2);
+            processSseEvent(event);
+            sepIdx = buffer.indexOf("\n\n");
+          }
+        },
+        flush(controller) {
+          buffer += decoder.decode();
+          if (buffer.trim().length > 0) {
+            processSseEvent(buffer);
+            buffer = "";
+          }
+          flush();
+          controller.terminate();
+        },
+      }),
+    );
   }
 
   private async extractAndRecordUsage(

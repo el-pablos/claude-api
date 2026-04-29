@@ -1,5 +1,19 @@
 import type { Context, Next } from "hono";
 import type { AppConfig } from "~/lib/types";
+import { timingSafeEqual } from "node:crypto";
+
+function safeEqual(a: string, b: string): boolean {
+  // timingSafeEqual butuh dua buffer dengan length sama. Kalau beda length,
+  // langsung return false tapi tetap comparable buffer length-nya.
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    // dummy compare supaya runtime constant terhadap input length yang sama
+    timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return timingSafeEqual(bufA, bufB);
+}
 
 export function createAuthMiddleware(config: AppConfig) {
   return async function authMiddleware(
@@ -14,14 +28,14 @@ export function createAuthMiddleware(config: AppConfig) {
     const authHeader = c.req.header("authorization");
     if (authHeader) {
       const token = authHeader.replace(/^Bearer\s+/i, "");
-      if (token === config.apiSecretKey) {
+      if (safeEqual(token, config.apiSecretKey)) {
         await next();
         return;
       }
     }
 
     const apiKey = c.req.header("x-api-key");
-    if (apiKey === config.apiSecretKey) {
+    if (apiKey && safeEqual(apiKey, config.apiSecretKey)) {
       await next();
       return;
     }
@@ -52,11 +66,13 @@ export function createDashboardAuth(config: AppConfig) {
     const decoded = Buffer.from(authHeader.slice(6), "base64").toString(
       "utf-8",
     );
-    const [username, password] = decoded.split(":");
+    const sepIdx = decoded.indexOf(":");
+    const username = sepIdx >= 0 ? decoded.slice(0, sepIdx) : decoded;
+    const password = sepIdx >= 0 ? decoded.slice(sepIdx + 1) : "";
 
     if (
-      username === config.dashboardUsername &&
-      password === config.dashboardPassword
+      safeEqual(username, config.dashboardUsername) &&
+      safeEqual(password, config.dashboardPassword)
     ) {
       await next();
       return;
