@@ -46,6 +46,7 @@ docker-compose.override.yml
 .playwright-mcp/
 *.png
 !public/**/*.png
+!docs/**/*.png
 
 # temp
 tmp/
