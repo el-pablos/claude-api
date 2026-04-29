@@ -18,7 +18,7 @@ vi.mock("~/lib/oauth", () => {
           codeChallenge: `challenge-${counter}`,
           state,
         },
-        authorizeUrl: `https://claude.com/cai/oauth/authorize?state=${state}`,
+        authorizeUrl: `https://claude.ai/oauth/authorize?state=${state}`,
         createdAt: Date.now(),
         accountName: name,
       };

@@ -115,7 +115,7 @@ describe("oauth", () => {
 
     it("harus parse callback URL penuh", () => {
       const parsed = parseAuthorizationCode(
-        "https://platform.claude.com/oauth/code/callback?code=abc123&state=state456",
+        "https://console.anthropic.com/oauth/code/callback?code=abc123&state=state456",
       );
       expect(parsed).toEqual({ code: "abc123", state: "state456" });
     });
